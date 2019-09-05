@@ -1,3 +1,7 @@
+use fuzzy_matcher::skim::fuzzy_match;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::Path;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -11,7 +15,8 @@ struct Cli {
 
 fn main() {
     let args = Cli::from_args();
-    let config = get_config_file();
+    let config_file = get_config_file();
+    let config = Path::new(config_file.as_str());
 
     if args.scan {
         scan(config, args.pattern);
@@ -27,12 +32,34 @@ fn get_config_file() -> String {
     }
 }
 
-fn scan(config: String, pattern: String) {
+fn scan(config: &Path, pattern: String) {
     println!("Scanning {}", pattern)
 }
 
-fn change(config: String, pattern: String) {
-    println!("Searching for {}", pattern)
+fn change(config: &Path, pattern: String) {
+    let file = match File::open(config) {
+        Ok(f) => f,
+        Err(e) => panic!("Could not open file {}", e),
+    };
+
+    let reader = BufReader::new(file);
+    let mut best_score = 0;
+    let mut best_result: String = String::new();
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+
+        let score = match fuzzy_match(&line, &pattern) {
+            Some(s) => s,
+            None => 0,
+        };
+        if score > best_score {
+            best_score = score;
+            best_result = line;
+        }
+    }
+
+    println!("Moving to {}", best_result);
 }
 
 #[cfg(test)]
