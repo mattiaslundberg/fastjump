@@ -59,7 +59,7 @@ fn change(config: &Path, pattern: String) {
         }
     }
 
-    println!("Moving to {}", best_result);
+    println!("{}", best_result);
 }
 
 #[cfg(test)]

@@ -20,6 +20,6 @@ Build database:
 
 Jump to location:
 ```zsh
- $ fastjump myproj
- // Moves to myproject (assuming it's in the db)
+ $ cd $(fastjump myproj)
+ // Moves to ~/myproject (assuming it's in the db)
 ```
