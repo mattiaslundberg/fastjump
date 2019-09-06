@@ -1,6 +1,6 @@
 use fuzzy_matcher::skim::fuzzy_match;
 use std::collections::VecDeque;
-use std::fs::{self, DirEntry, File, ReadDir};
+use std::fs::{self, File, ReadDir};
 use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -122,6 +122,37 @@ mod tests {
         let path = Path::new("/tmp/scannonrecursive");
         let pattern = String::from("test_configs/");
         scan(&path, pattern);
+
+        let file = match File::open(path) {
+            Ok(f) => f,
+            Err(e) => panic!("Could not open file {}", e),
+        };
+        let mut reader = BufReader::new(file);
+        let mut buffer = String::new();
+
+        reader.read_to_string(&mut buffer).unwrap();
+
+        let v: Vec<&str> = buffer.matches("empty").collect();
+        assert_eq!(v, ["empty"]);
+    }
+
+    #[test]
+    fn test_scan_recursive_dir() {
+        let path = Path::new("/tmp/scan_recursive");
+        let pattern = String::from(".");
+        scan(&path, pattern);
+
+        let file = match File::open(path) {
+            Ok(f) => f,
+            Err(e) => panic!("Could not open file {}", e),
+        };
+        let mut reader = BufReader::new(file);
+        let mut buffer = String::new();
+
+        reader.read_to_string(&mut buffer).unwrap();
+
+        let v: Vec<&str> = buffer.matches("empty").collect();
+        assert_eq!(v, ["empty"]);
     }
 
     #[test]
