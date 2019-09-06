@@ -60,6 +60,10 @@ fn change(config: &Path, pattern: String) -> String {
         }
     }
 
+    if best_score < 10 {
+        best_result = String::from(".");
+    }
+
     println!("{}", best_result);
     best_result
 }
@@ -94,6 +98,6 @@ mod tests {
     fn test_no_match() {
         let path = Path::new("test_configs/good");
         let pattern = String::from("nonexisting");
-        assert_eq!(change(&path, pattern), "")
+        assert_eq!(change(&path, pattern), ".")
     }
 }
