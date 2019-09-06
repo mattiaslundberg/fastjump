@@ -103,8 +103,8 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Could not open ")]
-    fn test_scan_non_existing_config() {
-        let path = Path::new("/tmp/nonexistingfile");
+    fn test_scan_non_existing_dir() {
+        let path = Path::new("/tmp/asdf/");
         let pattern = String::new();
         scan(&path, pattern);
     }
