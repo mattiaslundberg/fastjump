@@ -1,8 +1,9 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use std::fs::{self, File};
+use std::collections::VecDeque;
+use std::fs::{self, DirEntry, File, ReadDir};
 use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -40,20 +41,27 @@ fn scan(config: &Path, pattern: String) {
     };
     let path = Path::new(pattern.as_str());
 
-    let dir = match fs::read_dir(path) {
+    let dir: ReadDir = match fs::read_dir(path) {
         Ok(dir) => dir,
         Err(_) => panic!("Could not open directory {}", pattern),
     };
 
-    for thing in dir {
-        let path = thing.unwrap().path();
-        if path.is_dir() {
-            println!("{:?}", path.canonicalize());
-            // push to all_dirs
-            let absolute_path = path.canonicalize().unwrap();
-            let string = absolute_path.to_str().unwrap().as_bytes();
-            file.write(string).unwrap();
-            file.write(b"\n").unwrap();
+    let mut queue: VecDeque<ReadDir> = VecDeque::new();
+    queue.push_back(dir);
+
+    while !queue.is_empty() {
+        let dir: ReadDir = queue.pop_front().unwrap();
+        for thing in dir {
+            let path: PathBuf = thing.unwrap().path();
+            if path.is_dir() {
+                let absolute_path = path.canonicalize().unwrap();
+                let string = absolute_path.to_str().unwrap().as_bytes();
+                file.write(string).unwrap();
+                file.write(b"\n").unwrap();
+
+                let new_dir = fs::read_dir(path).unwrap();
+                queue.push_back(new_dir);
+            }
         }
     }
 }
