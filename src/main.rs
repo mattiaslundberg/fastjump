@@ -1,5 +1,6 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use std::fs::File;
+use std::fs::{self, File};
+use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 use structopt::StructOpt;
@@ -33,7 +34,28 @@ fn get_config_file() -> String {
 }
 
 fn scan(config: &Path, pattern: String) {
-    println!("Scanning {}", pattern)
+    let mut file = match File::create(config) {
+        Ok(f) => f,
+        Err(e) => panic!("Could not open file {}", e),
+    };
+    let path = Path::new(pattern.as_str());
+
+    let dir = match fs::read_dir(path) {
+        Ok(dir) => dir,
+        Err(_) => panic!("Could not open directory {}", pattern),
+    };
+
+    for thing in dir {
+        let path = thing.unwrap().path();
+        if path.is_dir() {
+            println!("{:?}", path.canonicalize());
+            // push to all_dirs
+            let absolute_path = path.canonicalize().unwrap();
+            let string = absolute_path.to_str().unwrap().as_bytes();
+            file.write(string).unwrap();
+            file.write(b"\n").unwrap();
+        }
+    }
 }
 
 fn change(config: &Path, pattern: String) -> String {
@@ -80,7 +102,22 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Could not open file")]
+    #[should_panic(expected = "Could not open ")]
+    fn test_scan_non_existing_config() {
+        let path = Path::new("/tmp/nonexistingfile");
+        let pattern = String::new();
+        scan(&path, pattern);
+    }
+
+    #[test]
+    fn test_scan_non_recursive_dir() {
+        let path = Path::new("/tmp/scannonrecursive");
+        let pattern = String::from("test_configs/");
+        scan(&path, pattern);
+    }
+
+    #[test]
+    #[should_panic(expected = "Could not open")]
     fn test_change_non_existing_config() {
         let path = Path::new("/tmp/nonexistingfile");
         let pattern = String::new();
