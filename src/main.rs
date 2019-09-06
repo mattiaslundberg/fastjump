@@ -36,7 +36,7 @@ fn scan(config: &Path, pattern: String) {
     println!("Scanning {}", pattern)
 }
 
-fn change(config: &Path, pattern: String) {
+fn change(config: &Path, pattern: String) -> String {
     let file = match File::open(config) {
         Ok(f) => f,
         Err(e) => panic!("Could not open file {}", e),
@@ -53,6 +53,7 @@ fn change(config: &Path, pattern: String) {
             Some(s) => s,
             None => 0,
         };
+
         if score > best_score {
             best_score = score;
             best_result = line;
@@ -60,6 +61,7 @@ fn change(config: &Path, pattern: String) {
     }
 
     println!("{}", best_result);
+    best_result
 }
 
 #[cfg(test)]
@@ -71,5 +73,27 @@ mod tests {
         assert_eq!(get_config_file(), "~/.fastjump");
         std::env::set_var("FASTJUMP_CONFIG", "/tmp/fastjump_test");
         assert_eq!(get_config_file(), "/tmp/fastjump_test");
+    }
+
+    #[test]
+    #[should_panic(expected = "Could not open file")]
+    fn test_change_non_existing_config() {
+        let path = Path::new("/tmp/nonexistingfile");
+        let pattern = String::new();
+        change(&path, pattern);
+    }
+
+    #[test]
+    fn test_good_match() {
+        let path = Path::new("test_configs/good");
+        let pattern = String::from("good");
+        assert_eq!(change(&path, pattern), "/tmp/good/hello")
+    }
+
+    #[test]
+    fn test_no_match() {
+        let path = Path::new("test_configs/good");
+        let pattern = String::from("nonexisting");
+        assert_eq!(change(&path, pattern), "")
     }
 }
