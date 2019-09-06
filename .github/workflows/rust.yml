@@ -13,3 +13,13 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+
+  verify_format:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install rustfmt
+      run: cargo install rustfmt
+    - name: Verify format
+      run: rustfmt --check src/*
