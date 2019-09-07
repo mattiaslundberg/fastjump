@@ -7,7 +7,10 @@
  
 ## Installation
 
-TODO
+### MacOS
+```zsh
+ $ brew install mattiaslundberg/fastjump/fastjump
+```
  
 ## Usage
 
