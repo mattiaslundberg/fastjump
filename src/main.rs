@@ -29,9 +29,10 @@ fn main() {
 }
 
 fn get_config_file() -> String {
+    let home = std::env::var("HOME").unwrap();
     match std::env::var("FASTJUMP_CONFIG") {
         Ok(val) => val,
-        Err(_e) => String::from("~/.fastjump"),
+        Err(_e) => String::from(format!("{}/.fastjump", home)),
     }
 }
 
@@ -106,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_get_config_file() {
-        assert_eq!(get_config_file(), "~/.fastjump");
+        assert!(get_config_file().ends_with(".fastjump"));
         std::env::set_var("FASTJUMP_CONFIG", "/tmp/fastjump_test");
         assert_eq!(get_config_file(), "/tmp/fastjump_test");
     }
