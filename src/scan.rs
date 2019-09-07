@@ -4,7 +4,21 @@ use std::fs::{self, File, ReadDir};
 use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
+
+fn get_ignores(ignore_file_path: &Path) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+    match File::open(ignore_file_path) {
+        Ok(f) => {
+            let reader = BufReader::new(f);
+            for line in reader.lines() {
+                let line = line.unwrap();
+                result.push(line);
+            }
+            result
+        }
+        Err(_) => result,
+    }
+}
 
 pub fn scan(config: &Path, pattern: String) {
     let mut file = match File::create(config) {
@@ -41,6 +55,23 @@ pub fn scan(config: &Path, pattern: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_read_existing_ignore_file() {
+        let path = Path::new("test_configs/ignores.txt");
+        let ignores = get_ignores(&path);
+        let mut expected: Vec<String> = Vec::new();
+        expected.push(String::from("node_modules"));
+        assert_eq!(ignores, expected);
+    }
+
+    #[test]
+    fn test_no_ignore_file() {
+        let path = Path::new("");
+        let ignores = get_ignores(&path);
+        let expected: Vec<String> = Vec::new();
+        assert_eq!(ignores, expected);
+    }
 
     #[test]
     #[should_panic(expected = "Could not open ")]
