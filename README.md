@@ -26,3 +26,8 @@ Jump to location:
  $ cd $(fastjump myproj)
  // Moves to ~/myproject (assuming it's in the db)
 ```
+
+Recommended helper function (add this to your shell config):
+```zsh
+ $ j() { cd $(fastjump $1) }
+```
