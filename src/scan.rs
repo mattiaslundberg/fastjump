@@ -9,7 +9,7 @@ use structopt::StructOpt;
 pub fn scan(config: &Path, pattern: String) {
     let mut file = match File::create(config) {
         Ok(f) => f,
-        Err(e) => panic!("Could not open file {}", e),
+        Err(e) => panic!("Could not open config file {}", e),
     };
 
     let mut queue: VecDeque<String> = VecDeque::new();
