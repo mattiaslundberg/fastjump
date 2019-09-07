@@ -26,6 +26,11 @@ pub fn scan(config: &Path, pattern: String) {
         Err(e) => panic!("Could not open config file {}", e),
     };
 
+    let mut ignore_path: PathBuf = PathBuf::from(pattern.as_str());
+    ignore_path.push(".fjignore");
+
+    let ignores: Vec<String> = get_ignores(ignore_path.as_path());
+
     let mut queue: VecDeque<String> = VecDeque::new();
     queue.push_back(pattern);
 
