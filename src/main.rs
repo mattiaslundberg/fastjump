@@ -39,9 +39,9 @@ fn scan(config: &Path, pattern: String) {
         Ok(f) => f,
         Err(e) => panic!("Could not open file {}", e),
     };
-    let path = Path::new(pattern.as_str());
+    let main_path = Path::new(pattern.as_str());
 
-    let dir: ReadDir = match fs::read_dir(path) {
+    let dir: ReadDir = match fs::read_dir(main_path) {
         Ok(dir) => dir,
         Err(_) => panic!("Could not open directory {}", pattern),
     };
