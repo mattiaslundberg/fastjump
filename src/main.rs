@@ -39,18 +39,17 @@ fn scan(config: &Path, pattern: String) {
         Ok(f) => f,
         Err(e) => panic!("Could not open file {}", e),
     };
-    let main_path = Path::new(pattern.as_str());
 
-    let dir: ReadDir = match fs::read_dir(main_path) {
-        Ok(dir) => dir,
-        Err(_) => panic!("Could not open directory {}", pattern),
-    };
+    let mut queue: VecDeque<String> = VecDeque::new();
+    queue.push_back(pattern);
 
-    let mut queue: VecDeque<ReadDir> = VecDeque::new();
-    queue.push_back(dir);
+    while let Some(path_str) = queue.pop_front() {
+        let path: &Path = Path::new(path_str.as_str());
+        let dir: ReadDir = match fs::read_dir(path) {
+            Ok(dir) => dir,
+            Err(_) => panic!("Failed to open dir {}", path_str),
+        };
 
-    while !queue.is_empty() {
-        let dir: ReadDir = queue.pop_front().unwrap();
         for thing in dir {
             let path: PathBuf = thing.unwrap().path();
             if path.is_dir() {
@@ -59,8 +58,7 @@ fn scan(config: &Path, pattern: String) {
                 file.write(string).unwrap();
                 file.write(b"\n").unwrap();
 
-                let new_dir = fs::read_dir(path).unwrap();
-                queue.push_back(new_dir);
+                queue.push_back(String::from(path.as_path().to_str().unwrap()));
             }
         }
     }
