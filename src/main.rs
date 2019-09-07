@@ -1,4 +1,5 @@
 use fuzzy_matcher::skim::fuzzy_match;
+use regex::Regex;
 use std::collections::VecDeque;
 use std::fs::{self, File, ReadDir};
 use std::io::prelude::*;
@@ -44,15 +45,18 @@ fn scan(config: &Path, pattern: String) {
     queue.push_back(pattern);
 
     while let Some(path_str) = queue.pop_front() {
-        let path: &Path = Path::new(path_str.as_str());
-        let dir: ReadDir = match fs::read_dir(path) {
+        let current_path: &Path = Path::new(path_str.as_str());
+        let dir: ReadDir = match fs::read_dir(current_path) {
             Ok(dir) => dir,
             Err(_) => panic!("Failed to open dir {}", path_str),
         };
 
         for thing in dir {
             let path: PathBuf = thing.unwrap().path();
-            if path.is_dir() {
+            let path_string = String::from(path.to_str().unwrap());
+            let is_dotdir: bool = Regex::new(r"/\.").unwrap().is_match(&path_string);
+
+            if path.is_dir() && !is_dotdir {
                 let absolute_path = path.canonicalize().unwrap();
                 let string = absolute_path.to_str().unwrap().as_bytes();
                 file.write(string).unwrap();
@@ -151,6 +155,26 @@ mod tests {
 
         let v: Vec<&str> = buffer.matches("empty").collect();
         assert_eq!(v, ["empty"]);
+    }
+
+    #[test]
+    fn test_scan_skips_dot_dirs() {
+        let path = Path::new("/tmp/scan_recursive");
+        let pattern = String::from(".");
+        scan(&path, pattern);
+
+        let file = match File::open(path) {
+            Ok(f) => f,
+            Err(e) => panic!("Could not open file {}", e),
+        };
+        let mut reader = BufReader::new(file);
+        let mut buffer = String::new();
+
+        reader.read_to_string(&mut buffer).unwrap();
+
+        let v: Vec<&str> = buffer.matches(".git").collect();
+        let e: Vec<&str> = Vec::new();
+        assert_eq!(v, e);
     }
 
     #[test]
