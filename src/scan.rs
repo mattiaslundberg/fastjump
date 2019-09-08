@@ -1,18 +1,18 @@
 use regex::Regex;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::fs::{self, File, ReadDir};
 use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
-fn get_ignores(ignore_file_path: &Path) -> Vec<String> {
-    let mut result: Vec<String> = Vec::new();
+fn get_ignores(ignore_file_path: &Path) -> HashSet<String> {
+    let mut result: HashSet<String> = HashSet::new();
     match File::open(ignore_file_path) {
         Ok(f) => {
             let reader = BufReader::new(f);
             for line in reader.lines() {
                 let line = line.unwrap();
-                result.push(line);
+                result.insert(line);
             }
             result
         }
@@ -29,7 +29,7 @@ pub fn scan(config: &Path, pattern: String) {
     let mut ignore_path: PathBuf = PathBuf::from(pattern.as_str());
     ignore_path.push(".fjignore");
 
-    let ignores: Vec<String> = get_ignores(ignore_path.as_path());
+    let ignores: HashSet<String> = get_ignores(ignore_path.as_path());
 
     let mut queue: VecDeque<String> = VecDeque::new();
     queue.push_back(pattern);
@@ -45,8 +45,11 @@ pub fn scan(config: &Path, pattern: String) {
             let path: PathBuf = thing.unwrap().path();
             let path_string = String::from(path.to_str().unwrap());
             let is_dotdir: bool = Regex::new(r"/\.").unwrap().is_match(&path_string);
+            let mut parts: Vec<&str> = path_string.as_str().split("/").collect();
+            let folder = parts.pop().unwrap();
+            let is_ignored: bool = ignores.contains(folder);
 
-            if path.is_dir() && !is_dotdir {
+            if path.is_dir() && !is_dotdir && !is_ignored {
                 let absolute_path = path.canonicalize().unwrap();
                 let string = absolute_path.to_str().unwrap().as_bytes();
                 file.write(string).unwrap();
@@ -57,6 +60,7 @@ pub fn scan(config: &Path, pattern: String) {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,8 +69,8 @@ mod tests {
     fn test_read_existing_ignore_file() {
         let path = Path::new("test_configs/ignores.txt");
         let ignores = get_ignores(&path);
-        let mut expected: Vec<String> = Vec::new();
-        expected.push(String::from("node_modules"));
+        let mut expected: HashSet<String> = HashSet::new();
+        expected.insert(String::from("node_modules"));
         assert_eq!(ignores, expected);
     }
 
@@ -74,7 +78,7 @@ mod tests {
     fn test_no_ignore_file() {
         let path = Path::new("");
         let ignores = get_ignores(&path);
-        let expected: Vec<String> = Vec::new();
+        let expected: HashSet<String> = HashSet::new();
         assert_eq!(ignores, expected);
     }
 
