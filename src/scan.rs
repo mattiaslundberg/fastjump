@@ -9,6 +9,7 @@ fn get_ignores(ignore_file_path: &Path) -> HashSet<String> {
     let mut result: HashSet<String> = HashSet::new();
     match File::open(ignore_file_path) {
         Ok(f) => {
+            println!("Loaded ignore_file {:?}", ignore_file_path);
             let reader = BufReader::new(f);
             for line in reader.lines() {
                 let line = line.unwrap();
@@ -16,7 +17,10 @@ fn get_ignores(ignore_file_path: &Path) -> HashSet<String> {
             }
             result
         }
-        Err(_) => result,
+        Err(_) => {
+            println!("Could not load ignore_file {:?}", ignore_file_path);
+            result
+        }
     }
 }
 
