@@ -34,6 +34,8 @@ pub fn scan(config: &Path, pattern: String) {
     let mut queue: VecDeque<String> = VecDeque::new();
     queue.push_back(pattern);
 
+    let re = Regex::new(r"/\.").unwrap();
+
     while let Some(path_str) = queue.pop_front() {
         let current_path: &Path = Path::new(path_str.as_str());
         let dir: ReadDir = match fs::read_dir(current_path) {
@@ -43,20 +45,28 @@ pub fn scan(config: &Path, pattern: String) {
 
         for thing in dir {
             let path: PathBuf = thing.unwrap().path();
-            let path_string = String::from(path.to_str().unwrap());
-            let is_dotdir: bool = Regex::new(r"/\.").unwrap().is_match(&path_string);
-            let mut parts: Vec<&str> = path_string.as_str().split("/").collect();
-            let folder = parts.pop().unwrap();
-            let is_ignored: bool = ignores.contains(folder);
+            if !path.is_dir() {
+                continue;
+            };
 
-            if path.is_dir() && !is_dotdir && !is_ignored {
-                let absolute_path = path.canonicalize().unwrap();
-                let string = absolute_path.to_str().unwrap().as_bytes();
-                file.write(string).unwrap();
-                file.write(b"\n").unwrap();
+            let path_str = path.to_str().unwrap();
+            let path_string: String = String::from(path_str);
 
-                queue.push_back(String::from(path.as_path().to_str().unwrap()));
+            if re.is_match(&path_string) {
+                continue;
+            };
+
+            let mut parts: Vec<&str> = path_str.split("/").collect();
+            let folder: &str = parts.pop().unwrap();
+
+            if ignores.contains(folder) {
+                continue;
             }
+
+            file.write(path_str.as_bytes()).unwrap();
+            file.write(b"\n").unwrap();
+
+            queue.push_back(String::from(path_str));
         }
     }
 }
