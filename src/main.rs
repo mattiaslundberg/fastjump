@@ -1,7 +1,7 @@
-use fuzzy_matcher::skim::fuzzy_match;
+mod fj_matcher;
 mod scan;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufReader;
 use std::path::Path;
 use structopt::StructOpt;
 
@@ -41,26 +41,7 @@ fn change(config: &Path, pattern: String) -> String {
     };
 
     let reader = BufReader::new(file);
-    let mut best_score = 0;
-    let mut best_result: String = String::new();
-
-    for line in reader.lines() {
-        let line = line.unwrap();
-
-        let score = match fuzzy_match(&line, &pattern) {
-            Some(s) => s,
-            None => 0,
-        };
-
-        if score > best_score {
-            best_score = score;
-            best_result = line;
-        }
-    }
-
-    if best_score < 10 {
-        best_result = String::from(".");
-    }
+    let best_result: String = fj_matcher::matcher(reader, pattern);
 
     println!("{}", best_result);
     best_result
