@@ -38,9 +38,9 @@ mod tests {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
     }
 
-    fn get_reader(lines: Vec<String>) -> BufReader<File> {
+    fn get_reader(file_name: &str, lines: Vec<String>) -> BufReader<File> {
         let mut dir = env::temp_dir();
-        dir.push("config");
+        dir.push(file_name);
         let mut file: File = OpenOptions::new()
             .create(true)
             .write(true)
@@ -59,9 +59,17 @@ mod tests {
 
     #[test]
     fn test_basic_exact_match() {
-        let lines: Vec<String> = vec_string!["test", "other"];
-        let reader: BufReader<File> = get_reader(lines);
+        let lines: Vec<String> = vec_string!["/test", "/other"];
+        let reader: BufReader<File> = get_reader("basic_exact", lines);
         let result: String = matcher(reader, String::from("test"));
-        assert_eq!(result, String::from("test"));
+        assert_eq!(result, String::from("/test"));
+    }
+
+    #[test]
+    fn test_prefer_later() {
+        let lines: Vec<String> = vec_string!["/projects/project/", "/projects/hello/"];
+        let reader: BufReader<File> = get_reader("prefer_later", lines);
+        let result: String = matcher(reader, String::from("project"));
+        assert_eq!(result, String::from("/projects/project/"));
     }
 }
