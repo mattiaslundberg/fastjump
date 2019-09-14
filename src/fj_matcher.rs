@@ -1,7 +1,6 @@
 use fuzzy_matcher::skim::fuzzy_match;
-use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader, SeekFrom};
+use std::io::{BufRead, BufReader};
 
 pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
     let mut best_score = 0;
@@ -32,8 +31,10 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::env;
     use std::fs::OpenOptions;
     use std::io::prelude::*;
+    use std::io::SeekFrom;
 
     macro_rules! vec_string {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -68,10 +69,9 @@ mod tests {
 
     #[test]
     fn test_prefer_later_in_string() {
-        let lines: Vec<String> =
-            vec_string!["/projects/", "/projects/project/", "/projects/hello/"];
+        let lines: Vec<String> = vec_string!["/projects", "/projects/project", "/projects/hello"];
         let reader: BufReader<File> = get_reader("prefer_later", lines);
         let result: String = matcher(reader, String::from("project"));
-        assert_eq!(result, String::from("/projects/project/"));
+        assert_eq!(result, String::from("/projects/project"));
     }
 }
