@@ -6,9 +6,10 @@ use std::io::{BufRead, BufReader, SeekFrom};
 pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
     let mut best_score = 0;
     let mut best_result: String = String::new();
+    let pattern = pattern.chars().rev().collect::<String>();
 
     for line in reader.lines() {
-        let line = line.unwrap();
+        let line = line.unwrap().chars().rev().collect::<String>();
 
         let score = match fuzzy_match(&line, &pattern) {
             Some(s) => s,
@@ -25,7 +26,7 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
         best_result = String::from(".");
     }
 
-    best_result
+    best_result.chars().rev().collect::<String>()
 }
 
 #[cfg(test)]
@@ -66,8 +67,9 @@ mod tests {
     }
 
     #[test]
-    fn test_prefer_later() {
-        let lines: Vec<String> = vec_string!["/projects/project/", "/projects/hello/"];
+    fn test_prefer_later_in_string() {
+        let lines: Vec<String> =
+            vec_string!["/projects/", "/projects/project/", "/projects/hello/"];
         let reader: BufReader<File> = get_reader("prefer_later", lines);
         let result: String = matcher(reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project/"));
