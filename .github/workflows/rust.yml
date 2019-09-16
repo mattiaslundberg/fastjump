@@ -8,20 +8,29 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
     - name: Build
-      run: cargo +nightly build --verbose
+      run: cargo build --verbose
     - name: Run tests
-      run: cargo +nightly test --verbose
+      run: cargo test --verbose
 
   bench:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v1
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+
     - name: Build
-      run: cargo +nightly build --verbose
+      run: cargo build --verbose
     - name: Run benchmark
-      run: cargo +nightly bench --verbose
+      run: cargo bench --verbose
 
   verify_format:
     runs-on: ubuntu-latest
