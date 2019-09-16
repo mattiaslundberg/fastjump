@@ -1,3 +1,4 @@
+extern crate test;
 use fuzzy_matcher::skim::fuzzy_match;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -31,10 +32,13 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::distributions::Alphanumeric;
+    use rand::Rng;
     use std::env;
     use std::fs::OpenOptions;
     use std::io::prelude::*;
     use std::io::SeekFrom;
+    use test::{black_box, Bencher};
 
     macro_rules! vec_string {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -59,6 +63,13 @@ mod tests {
         BufReader::new(file)
     }
 
+    fn get_rand_string(len: usize) -> String {
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(len)
+            .collect::<String>()
+    }
+
     #[test]
     fn test_basic_exact_match() {
         let lines: Vec<String> = vec_string!["/test", "/other"];
@@ -74,4 +85,33 @@ mod tests {
         let result: String = matcher(reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project"));
     }
+
+    #[bench]
+    fn bench_scan_random_strings(b: &mut Bencher) {
+        let mut lines: Vec<String> = Vec::new();
+        (0..1000).for_each(|_x| {
+            lines.push(get_rand_string(100));
+        });
+        let mut dir = env::temp_dir();
+        dir.push("bench_random_string");
+        let file_name: &str = dir.to_str().unwrap();
+        let mut file: File = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .read(true)
+            .open(file_name)
+            .unwrap();
+
+        for line in lines {
+            file.write(line.as_bytes()).unwrap();
+            file.write(b"\n").unwrap();
+        }
+
+        b.iter(|| {
+            let file: File = File::open(file_name).unwrap();
+            let reader: BufReader<File> = BufReader::new(file);
+            black_box(matcher(reader, get_rand_string(20)));
+        });
+    }
+
 }

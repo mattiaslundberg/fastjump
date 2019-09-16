@@ -1,3 +1,4 @@
+#![feature(test)]
 mod fj_matcher;
 mod scan;
 use std::fs::File;
