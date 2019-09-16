@@ -1,4 +1,3 @@
-extern crate test;
 use fuzzy_matcher::skim::fuzzy_match;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -32,13 +31,10 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::distributions::Alphanumeric;
-    use rand::Rng;
     use std::env;
     use std::fs::OpenOptions;
     use std::io::prelude::*;
     use std::io::SeekFrom;
-    use test::{black_box, Bencher};
 
     macro_rules! vec_string {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -63,13 +59,6 @@ mod tests {
         BufReader::new(file)
     }
 
-    fn get_rand_string(len: usize) -> String {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(len)
-            .collect::<String>()
-    }
-
     #[test]
     fn test_basic_exact_match() {
         let lines: Vec<String> = vec_string!["/test", "/other"];
@@ -84,6 +73,25 @@ mod tests {
         let reader: BufReader<File> = get_reader("prefer_later", lines);
         let result: String = matcher(reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project"));
+    }
+
+}
+
+#[cfg(all(feature = "nightly", test))]
+mod benchs {
+    use super::*;
+    use rand::distributions::Alphanumeric;
+    use rand::Rng;
+    use std::env;
+    use std::fs::OpenOptions;
+    use std::io::prelude::*;
+    use test::{black_box, Bencher};
+
+    fn get_rand_string(len: usize) -> String {
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(len)
+            .collect::<String>()
     }
 
     #[bench]
@@ -113,5 +121,4 @@ mod tests {
             black_box(matcher(reader, get_rand_string(20)));
         });
     }
-
 }

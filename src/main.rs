@@ -1,4 +1,8 @@
-#![feature(test)]
+#![cfg_attr(all(feature = "nightly", test), feature(test))]
+
+#[cfg(all(feature = "nightly", test))]
+extern crate test;
+
 mod fj_matcher;
 mod scan;
 use std::fs::File;
