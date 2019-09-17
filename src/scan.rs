@@ -41,7 +41,7 @@ pub fn scan(config: &Path, pattern: String) {
         let current_path: &Path = Path::new(path_str.as_str());
         let dir: ReadDir = match fs::read_dir(current_path) {
             Ok(dir) => dir,
-            Err(_) => panic!("Failed to open dir {}", path_str),
+            Err(e) => panic!("Failed to open dir {}: {}", path_str, e),
         };
 
         for thing in dir {
