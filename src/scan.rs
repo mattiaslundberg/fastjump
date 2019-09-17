@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::collections::{HashSet, VecDeque};
 use std::fs::{self, File, ReadDir};
 use std::io::prelude::*;
@@ -38,8 +37,6 @@ pub fn scan(config: &Path, pattern: String) {
     let mut queue: VecDeque<String> = VecDeque::new();
     queue.push_back(pattern);
 
-    let re = Regex::new(r"/\.").unwrap();
-
     while let Some(path_str) = queue.pop_front() {
         let current_path: &Path = Path::new(path_str.as_str());
         let dir: ReadDir = match fs::read_dir(current_path) {
@@ -56,7 +53,7 @@ pub fn scan(config: &Path, pattern: String) {
             let path_str = path.to_str().unwrap();
             let path_string: String = String::from(path_str);
 
-            if re.is_match(&path_string) {
+            if path_string.contains("/.") {
                 continue;
             };
 
