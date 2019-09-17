@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -13,6 +14,7 @@ jobs:
       run: cargo test --verbose
 
   bench:
+    name: Benchmarks
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -26,6 +28,7 @@ jobs:
       run: cargo bench --verbose
 
   verify_format:
+    name: Rustfmt
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
