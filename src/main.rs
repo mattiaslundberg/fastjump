@@ -35,7 +35,7 @@ fn get_config_file() -> String {
     let home = std::env::var("HOME").unwrap();
     match std::env::var("FASTJUMP_CONFIG") {
         Ok(val) => val,
-        Err(_e) => String::from(format!("{}/.fastjump", home)),
+        Err(_e) => format!("{}/.fastjump", home),
     }
 }
 
