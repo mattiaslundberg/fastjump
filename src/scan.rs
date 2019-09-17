@@ -60,7 +60,7 @@ pub fn scan(config: &Path, pattern: String) {
                 continue;
             };
 
-            let mut parts: Vec<&str> = path_str.split("/").collect();
+            let mut parts: Vec<&str> = path_str.split('/').collect();
             let folder: &str = parts.pop().unwrap();
 
             if ignores.contains(folder) {
