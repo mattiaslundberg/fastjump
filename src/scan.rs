@@ -67,8 +67,8 @@ pub fn scan(config: &Path, pattern: String) {
                 continue;
             }
 
-            file.write(path_str.as_bytes()).unwrap();
-            file.write(b"\n").unwrap();
+            file.write_all(path_str.as_bytes()).unwrap();
+            file.write_all(b"\n").unwrap();
 
             queue.push_back(String::from(path_str));
         }
