@@ -4,7 +4,12 @@ use std::io::prelude::*;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
-fn get_ignores(ignore_file_path: &Path) -> HashSet<String> {
+fn get_ignores(pattern: &str) -> HashSet<String> {
+    let mut ignore_path: PathBuf = PathBuf::from(pattern);
+    ignore_path.push(".fjignore");
+
+    let ignore_file_path: &Path = ignore_path.as_path();
+
     let mut result: HashSet<String> = HashSet::new();
     match File::open(ignore_file_path) {
         Ok(f) => {
@@ -29,10 +34,7 @@ pub fn scan(config: &Path, pattern: String) {
         Err(e) => panic!("Could not open config file {}", e),
     };
 
-    let mut ignore_path: PathBuf = PathBuf::from(pattern.as_str());
-    ignore_path.push(".fjignore");
-
-    let ignores: HashSet<String> = get_ignores(ignore_path.as_path());
+    let ignores: HashSet<String> = get_ignores(pattern.as_str());
 
     let mut queue: VecDeque<String> = VecDeque::new();
     queue.push_back(pattern);
@@ -78,17 +80,16 @@ mod tests {
 
     #[test]
     fn test_read_existing_ignore_file() {
-        let path = Path::new("test_configs/ignores.txt");
-        let ignores = get_ignores(&path);
+        let ignores = get_ignores("test_configs");
         let mut expected: HashSet<String> = HashSet::new();
-        expected.insert(String::from("node_modules"));
+        expected.insert(String::from("other"));
+        expected.insert(String::from("ignored"));
         assert_eq!(ignores, expected);
     }
 
     #[test]
     fn test_no_ignore_file() {
-        let path = Path::new("");
-        let ignores = get_ignores(&path);
+        let ignores = get_ignores("");
         let expected: HashSet<String> = HashSet::new();
         assert_eq!(ignores, expected);
     }
