@@ -98,7 +98,7 @@ mod benchs {
     fn bench_scan_random_strings(b: &mut Bencher) {
         let mut lines: Vec<String> = Vec::new();
         (0..1000).for_each(|_x| {
-            lines.push(get_rand_string(100));
+            lines.push(get_rand_string(1000));
         });
         let mut dir = env::temp_dir();
         dir.push("bench_random_string");
