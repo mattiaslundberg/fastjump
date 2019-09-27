@@ -1,31 +1,60 @@
 use fuzzy_matcher::skim::fuzzy_match;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
-    let mut best_score = 0;
-    let mut best_result: String = String::new();
+    let best_score = Arc::new(Mutex::new(0));
+    let best_result = Arc::new(Mutex::new(String::new()));
     let pattern = pattern.chars().rev().collect::<String>();
+    let lines = reader.lines();
 
-    for line in reader.lines() {
-        let line = line.unwrap().chars().rev().collect::<String>();
+    let arc_lines = Arc::new(Mutex::new(lines));
+    let mut handles = vec![];
 
-        let score = match fuzzy_match(&line, &pattern) {
-            Some(s) => s,
-            None => 0,
-        };
+    for _ in 0..3 {
+        let arc_lines = Arc::clone(&arc_lines);
+        let best_score = Arc::clone(&best_score);
+        let best_result = Arc::clone(&best_result);
+        let pattern = String::from(pattern.as_str());
+        let handle = thread::spawn(move || loop {
+            let mut lines = arc_lines.lock().unwrap();
+            let line = match lines.next() {
+                Some(line) => line,
+                None => break,
+            };
+            let a = line.unwrap().chars().rev().collect::<String>();
+            drop(lines);
 
-        if score > best_score {
-            best_score = score;
-            best_result = line;
-        }
+            let score = match fuzzy_match(&a, &pattern) {
+                Some(s) => s,
+                None => 0,
+            };
+
+            let mut best_s = best_score.lock().unwrap();
+
+            if score > *best_s {
+                *best_s = score;
+                let mut best_r = best_result.lock().unwrap();
+                *best_r = a;
+            }
+        });
+        handles.push(handle);
     }
 
-    if best_score < 10 {
-        best_result = String::from(".");
+    for handle in handles {
+        handle.join().unwrap();
     }
 
-    best_result.chars().rev().collect::<String>()
+    let best_s = best_score.lock().unwrap();
+    let mut best_r = best_result.lock().unwrap();
+
+    if *best_s < 10 {
+        *best_r = String::from(".");
+    }
+
+    best_r.chars().rev().collect::<String>()
 }
 
 #[cfg(test)]
@@ -74,7 +103,6 @@ mod tests {
         let result: String = matcher(reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project"));
     }
-
 }
 
 #[cfg(all(feature = "nightly", test))]
