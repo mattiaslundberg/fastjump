@@ -1,6 +1,7 @@
 use fuzzy_matcher::skim::fuzzy_match;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -12,32 +13,38 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
 
     let arc_lines = Arc::new(Mutex::new(lines));
     let mut handles = vec![];
+    let mut receivers = vec![];
 
     for _ in 0..3 {
         let arc_lines = Arc::clone(&arc_lines);
-        let best_score = Arc::clone(&best_score);
-        let best_result = Arc::clone(&best_result);
         let pattern = String::from(pattern.as_str());
-        let handle = thread::spawn(move || loop {
-            let mut lines = arc_lines.lock().unwrap();
-            let line = match lines.next() {
-                Some(line) => line,
-                None => break,
-            };
-            let a = line.unwrap().chars().rev().collect::<String>();
-            drop(lines);
+        let (tx, rs) = channel();
+        receivers.push(rs);
 
-            let score = match fuzzy_match(&a, &pattern) {
-                Some(s) => s,
-                None => 0,
-            };
+        let handle = thread::spawn(move || {
+            let mut best_s = 0;
+            let mut best_res = String::from("");
+            loop {
+                let mut lines = arc_lines.lock().unwrap();
+                let line = match lines.next() {
+                    Some(line) => line,
+                    None => {
+                        tx.send((best_s, best_res));
+                        break;
+                    }
+                };
+                let a = line.unwrap().chars().rev().collect::<String>();
+                drop(lines);
 
-            let mut best_s = best_score.lock().unwrap();
+                let score = match fuzzy_match(&a, &pattern) {
+                    Some(s) => s,
+                    None => 0,
+                };
 
-            if score > *best_s {
-                *best_s = score;
-                let mut best_r = best_result.lock().unwrap();
-                *best_r = a;
+                if score > best_s {
+                    best_s = score;
+                    best_res = a;
+                }
             }
         });
         handles.push(handle);
@@ -47,14 +54,21 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
         handle.join().unwrap();
     }
 
-    let best_s = best_score.lock().unwrap();
-    let mut best_r = best_result.lock().unwrap();
-
-    if *best_s < 10 {
-        *best_r = String::from(".");
+    let mut best_score = 0;
+    let mut best_result = String::from("");
+    for rs in receivers {
+        let (best_s, best_res) = rs.recv().unwrap();
+        if best_s > best_score {
+            best_score = best_s;
+            best_result = best_res;
+        }
     }
 
-    best_r.chars().rev().collect::<String>()
+    if best_score < 10 {
+        best_result = String::from(".");
+    }
+
+    best_result.chars().rev().collect::<String>()
 }
 
 #[cfg(test)]
