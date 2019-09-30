@@ -52,7 +52,7 @@ dependencies = [
 
 [[package]]
 name = "fastjump"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "fuzzy-matcher 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
