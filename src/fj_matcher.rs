@@ -6,9 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
-    let best_score = Arc::new(Mutex::new(0));
-    let best_result = Arc::new(Mutex::new(String::new()));
-    let pattern = pattern.chars().rev().collect::<String>();
+    let pattern = Arc::new(pattern.chars().rev().collect::<String>());
     let lines = reader.lines();
 
     let arc_lines = Arc::new(Mutex::new(lines));
@@ -17,7 +15,7 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
 
     for _ in 0..3 {
         let arc_lines = Arc::clone(&arc_lines);
-        let pattern = String::from(pattern.as_str());
+        let pattern = Arc::clone(&pattern);
         let (tx, rs) = channel();
         receivers.push(rs);
 
@@ -27,23 +25,26 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
             loop {
                 let mut lines = arc_lines.lock().unwrap();
                 let line = match lines.next() {
-                    Some(line) => line,
+                    Some(line) => {
+                        drop(lines);
+                        line.unwrap()
+                    }
                     None => {
-                        tx.send((best_s, best_res));
+                        tx.send((best_s, best_res)).unwrap();
                         break;
                     }
                 };
-                let a = line.unwrap().chars().rev().collect::<String>();
-                drop(lines);
 
-                let score = match fuzzy_match(&a, &pattern) {
+                let rev_line = line.chars().rev().collect::<String>();
+
+                let score = match fuzzy_match(&rev_line, &pattern) {
                     Some(s) => s,
                     None => 0,
                 };
 
                 if score > best_s {
                     best_s = score;
-                    best_res = a;
+                    best_res = line;
                 }
             }
         });
@@ -68,7 +69,7 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
         best_result = String::from(".");
     }
 
-    best_result.chars().rev().collect::<String>()
+    best_result
 }
 
 #[cfg(test)]
