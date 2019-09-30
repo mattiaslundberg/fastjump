@@ -69,7 +69,7 @@ pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
         best_result = String::from(".");
     }
 
-    best_result
+    best_result.replace(' ', "\\ ")
 }
 
 #[cfg(test)]
@@ -117,6 +117,15 @@ mod tests {
         let reader: BufReader<File> = get_reader("prefer_later", lines);
         let result: String = matcher(reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project"));
+    }
+
+    #[test]
+    fn test_handles_space_in_path() {
+        let lines: Vec<String> =
+            vec_string!["/projects", "/projects/project other", "/projects/hello"];
+        let reader: BufReader<File> = get_reader("space", lines);
+        let result: String = matcher(reader, String::from("other"));
+        assert_eq!(result, String::from("/projects/project\\ other"));
     }
 }
 
