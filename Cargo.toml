@@ -10,7 +10,6 @@ build = "src/build.rs"
 [dependencies]
 structopt = "0.3"
 fuzzy-matcher = "*"
-regex = "1"
 rand = "0.7"
 
 [features]
