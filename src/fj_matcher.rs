@@ -1,3 +1,4 @@
+use crate::config::{default_config, Config};
 use fuzzy_matcher::skim::fuzzy_match;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -5,7 +6,7 @@ use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-pub fn matcher(reader: BufReader<File>, pattern: String) -> String {
+pub fn matcher(config: Config, reader: BufReader<File>, pattern: String) -> String {
     let pattern = Arc::new(pattern.chars().rev().collect::<String>());
     let lines = reader.lines();
 
@@ -107,7 +108,7 @@ mod tests {
     fn test_basic_exact_match() {
         let lines: Vec<String> = vec_string!["/test", "/other"];
         let reader: BufReader<File> = get_reader("basic_exact", lines);
-        let result: String = matcher(reader, String::from("test"));
+        let result: String = matcher(default_config(), reader, String::from("test"));
         assert_eq!(result, String::from("/test"));
     }
 
@@ -115,7 +116,7 @@ mod tests {
     fn test_prefer_later_in_string() {
         let lines: Vec<String> = vec_string!["/projects", "/projects/project", "/projects/hello"];
         let reader: BufReader<File> = get_reader("prefer_later", lines);
-        let result: String = matcher(reader, String::from("project"));
+        let result: String = matcher(default_config(), reader, String::from("project"));
         assert_eq!(result, String::from("/projects/project"));
     }
 
@@ -124,7 +125,7 @@ mod tests {
         let lines: Vec<String> =
             vec_string!["/projects", "/projects/project other", "/projects/hello"];
         let reader: BufReader<File> = get_reader("space", lines);
-        let result: String = matcher(reader, String::from("other"));
+        let result: String = matcher(default_config(), reader, String::from("other"));
         assert_eq!(result, String::from("/projects/project\\ other"));
     }
 }
@@ -170,7 +171,7 @@ mod benchs {
         b.iter(|| {
             let file: File = File::open(file_name).unwrap();
             let reader: BufReader<File> = BufReader::new(file);
-            black_box(matcher(reader, get_rand_string(20)));
+            black_box(matcher(default_config(), reader, get_rand_string(20)));
         });
     }
 }

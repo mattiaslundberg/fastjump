@@ -3,8 +3,10 @@
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
+mod config;
 mod fj_matcher;
 mod scan;
+use config::{default_config, Config};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -27,7 +29,7 @@ fn main() {
     if args.scan {
         scan::scan(cache, args.pattern);
     } else {
-        change(cache, args.pattern);
+        change(default_config(), cache, args.pattern);
     }
 }
 
@@ -39,14 +41,14 @@ fn get_cache_file() -> String {
     }
 }
 
-fn change(cache: &Path, pattern: String) -> String {
+fn change(config: Config, cache: &Path, pattern: String) -> String {
     let file = match File::open(cache) {
         Ok(f) => f,
         Err(e) => panic!("Could not open file {}", e),
     };
 
     let reader = BufReader::new(file);
-    let best_result: String = fj_matcher::matcher(reader, pattern);
+    let best_result: String = fj_matcher::matcher(config, reader, pattern);
 
     println!("{}", best_result);
     best_result
@@ -68,20 +70,20 @@ mod tests {
     fn test_change_non_existing_cache() {
         let path = Path::new("/tmp/nonexistingfile");
         let pattern = String::new();
-        change(&path, pattern);
+        change(default_config(), &path, pattern);
     }
 
     #[test]
     fn test_good_match() {
         let path = Path::new("test_configs/good");
         let pattern = String::from("good");
-        assert_eq!(change(&path, pattern), "/tmp/good/hello")
+        assert_eq!(change(default_config(), &path, pattern), "/tmp/good/hello")
     }
 
     #[test]
     fn test_no_match() {
         let path = Path::new("test_configs/good");
         let pattern = String::from("nonexisting");
-        assert_eq!(change(&path, pattern), ".")
+        assert_eq!(change(default_config(), &path, pattern), ".")
     }
 }

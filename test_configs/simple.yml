@@ -1,0 +1,4 @@
+ignores:
+  - node_modules
+
+scan_root: test_configs
