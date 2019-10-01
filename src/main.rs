@@ -21,17 +21,17 @@ struct Cli {
 
 fn main() {
     let args = Cli::from_args();
-    let config_file = get_config_file();
-    let config = Path::new(config_file.as_str());
+    let cache_file = get_cache_file();
+    let cache = Path::new(cache_file.as_str());
 
     if args.scan {
-        scan::scan(config, args.pattern);
+        scan::scan(cache, args.pattern);
     } else {
-        change(config, args.pattern);
+        change(cache, args.pattern);
     }
 }
 
-fn get_config_file() -> String {
+fn get_cache_file() -> String {
     let home = std::env::var("HOME").unwrap();
     match std::env::var("FASTJUMP_CONFIG") {
         Ok(val) => val,
@@ -39,8 +39,8 @@ fn get_config_file() -> String {
     }
 }
 
-fn change(config: &Path, pattern: String) -> String {
-    let file = match File::open(config) {
+fn change(cache: &Path, pattern: String) -> String {
+    let file = match File::open(cache) {
         Ok(f) => f,
         Err(e) => panic!("Could not open file {}", e),
     };
@@ -57,15 +57,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_config_file() {
-        assert!(get_config_file().ends_with(".fastjump"));
+    fn test_get_cache_file() {
+        assert!(get_cache_file().ends_with(".fastjump"));
         std::env::set_var("FASTJUMP_CONFIG", "/tmp/fastjump_test");
-        assert_eq!(get_config_file(), "/tmp/fastjump_test");
+        assert_eq!(get_cache_file(), "/tmp/fastjump_test");
     }
 
     #[test]
     #[should_panic(expected = "Could not open")]
-    fn test_change_non_existing_config() {
+    fn test_change_non_existing_cache() {
         let path = Path::new("/tmp/nonexistingfile");
         let pattern = String::new();
         change(&path, pattern);

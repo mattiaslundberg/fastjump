@@ -28,8 +28,8 @@ fn get_ignores(pattern: &str) -> HashSet<String> {
     }
 }
 
-pub fn scan(config: &Path, pattern: String) {
-    let mut file = match File::create(config) {
+pub fn scan(cache: &Path, pattern: String) {
+    let mut file = match File::create(cache) {
         Ok(f) => f,
         Err(e) => panic!("Could not open config file {}", e),
     };
