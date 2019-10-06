@@ -59,5 +59,5 @@ Add the following function to your shell config (`~/.bashrc`/`~/.bash_profile`/`
 
 ## Future work
  
- - [ ] Remove need for scanning, let matcher scan when running and have configuration for base directory
+ - [x] Remove need for scanning, let matcher scan when running and have configuration for base directory
  - [ ] Learn based on user navigation preferences, hook in on cd and save all working dirs commonly used, prefer these when matching. Should be optional (keep install as simple as possible)
