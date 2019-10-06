@@ -2,3 +2,4 @@ ignores:
   - node_modules
 
 scan_root: test_configs
+num_threads: 5

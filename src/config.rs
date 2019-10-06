@@ -1,13 +1,15 @@
 extern crate yaml_rust;
 use std::collections::HashSet;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use yaml_rust::{yaml, YamlLoader};
 
 pub struct Config {
-    ignores: HashSet<String>,
-    scan_root: String,
+    pub ignores: HashSet<String>,
+    pub scan_root: String,
+    pub num_threads: u8,
 }
 
 fn get_default_config_file() -> String {
@@ -16,10 +18,21 @@ fn get_default_config_file() -> String {
 }
 
 pub fn default_config() -> Config {
-    let home = std::env::var("HOME").unwrap();
+    let scan_root = std::env::var("HOME").unwrap();
     Config {
         ignores: HashSet::new(),
-        scan_root: String::from(home),
+        scan_root,
+        num_threads: 1,
+    }
+}
+
+#[cfg(test)]
+pub fn test_config() -> Config {
+    let ignores = HashSet::new();
+    Config {
+        ignores,
+        scan_root: String::from("test_configs"),
+        num_threads: 1,
     }
 }
 
@@ -40,9 +53,16 @@ fn read_config_from_file(mut file: File) -> Config {
     let default_root = ".";
     let scan_root = data["scan_root"].as_str().unwrap_or(&default_root);
 
+    let num_threads: u8 = data["num_threads"]
+        .as_i64()
+        .unwrap_or(3)
+        .try_into()
+        .unwrap();
+
     Config {
-        ignores: ignores,
+        ignores,
         scan_root: String::from(scan_root),
+        num_threads,
     }
 }
 
@@ -65,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_no_config_file_existing() {
-        let config = get_config(None);
+        let config = get_config(Some(Path::new("nonexisting")));
         assert_eq!(config.ignores, HashSet::new());
     }
 
@@ -75,20 +95,33 @@ mod tests {
         let mut expected = HashSet::new();
         expected.insert(String::from("node_modules"));
         assert_eq!(config.ignores, expected);
-        assert_eq!(config.scan_root, String::from("test_configs"))
+        assert_eq!(config.scan_root, String::from("test_configs"));
+        assert_eq!(config.num_threads, 5);
     }
 
     #[test]
     fn test_missing_ignores() {
         let config = get_config(Some(Path::new("test_configs/missing_ignores.yml")));
         assert_eq!(config.ignores, HashSet::new());
-        assert_eq!(config.scan_root, String::from("test_configs"))
+        assert_eq!(config.scan_root, String::from("test_configs"));
     }
 
     #[test]
     fn test_missing_scan_root() {
         let config = get_config(Some(Path::new("test_configs/missing_root.yml")));
         assert_eq!(config.ignores, HashSet::new());
-        assert_eq!(config.scan_root, String::from("."))
+        assert_eq!(config.scan_root, String::from("."));
+    }
+
+    #[test]
+    fn test_missing_threads() {
+        let config = get_config(Some(Path::new("test_configs/missing_root.yml")));
+        assert_eq!(config.num_threads, 3);
+    }
+
+    #[test]
+    #[should_panic(expected = "TryFromIntError")]
+    fn test_threads_too_large() {
+        get_config(Some(Path::new("test_configs/large_threads.yml")));
     }
 }
