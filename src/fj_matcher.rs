@@ -2,6 +2,10 @@
 use crate::config::test_config;
 use crate::config::Config;
 use fuzzy_matcher::skim::fuzzy_match;
+#[cfg(test)]
+use rand::distributions::Alphanumeric;
+#[cfg(test)]
+use rand::Rng;
 use std::collections::VecDeque;
 #[cfg(test)]
 use std::env;
@@ -109,10 +113,29 @@ pub fn matcher(config: Config, pattern: String) -> String {
 }
 
 #[cfg(test)]
+fn get_rand_string(len: usize) -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(len)
+        .collect::<String>()
+}
+
+#[cfg(test)]
 fn create_test_folders(folders: Vec<String>) -> (Config, PathBuf) {
     let mut config: Config = test_config();
     let mut dir = env::temp_dir();
-    dir.push("fj_matcher_tests");
+    let mut tmp_dir = get_rand_string(3);
+    tmp_dir.push_str("_fj_matcher_tests");
+    dir.push(tmp_dir);
+
+    match fs::remove_dir_all(dir.clone()) {
+        Ok(()) => (),
+        Err(e) => {
+            println!("Failed to remove directory {}", e);
+            ()
+        }
+    };
+
     config.scan_root = String::from(dir.as_path().to_str().unwrap());
 
     for folder in folders {
@@ -166,16 +189,7 @@ mod tests {
 #[cfg(all(feature = "nightly", test))]
 mod benchs {
     use super::*;
-    use rand::distributions::Alphanumeric;
-    use rand::Rng;
     use test::{black_box, Bencher};
-
-    fn get_rand_string(len: usize) -> String {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(len)
-            .collect::<String>()
-    }
 
     fn generate_lines() -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
