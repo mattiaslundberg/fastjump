@@ -6,6 +6,7 @@ use std::io::Read;
 use std::path::Path;
 use yaml_rust::{yaml, YamlLoader};
 
+#[derive(Clone)]
 pub struct Config {
     pub ignores: HashSet<String>,
     pub scan_root: String,

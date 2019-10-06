@@ -1,6 +1,10 @@
+#[cfg(test)]
+use crate::config::test_config;
 use crate::config::Config;
 use fuzzy_matcher::skim::fuzzy_match;
 use std::collections::VecDeque;
+#[cfg(test)]
+use std::env;
 use std::fs::{self, ReadDir};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::channel;
@@ -9,7 +13,6 @@ use std::thread;
 
 pub fn matcher(config: Config, pattern: String) -> String {
     let pattern = Arc::new(pattern.chars().rev().collect::<String>());
-    // TODO: Move out directories to parent (allows to send in mocked list during tests)
     let mut directories: VecDeque<String> = VecDeque::new();
     directories.push_back(String::from(config.scan_root.as_str()));
 
@@ -106,29 +109,28 @@ pub fn matcher(config: Config, pattern: String) -> String {
 }
 
 #[cfg(test)]
+fn create_test_folders(folders: Vec<String>) -> (Config, PathBuf) {
+    let mut config: Config = test_config();
+    let mut dir = env::temp_dir();
+    dir.push("fj_matcher_tests");
+    config.scan_root = String::from(dir.as_path().to_str().unwrap());
+
+    for folder in folders {
+        let mut d = dir.clone();
+        d.push(folder);
+
+        fs::create_dir_all(d.as_path()).unwrap();
+    }
+
+    (config, dir)
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::test_config;
-    use std::env;
 
     macro_rules! vec_string {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
-    }
-
-    fn create_test_folders(folders: Vec<String>) -> (Config, PathBuf) {
-        let mut config: Config = test_config();
-        let mut dir = env::temp_dir();
-        dir.push("fj_matcher_tests");
-        config.scan_root = String::from(dir.as_path().to_str().unwrap());
-
-        for folder in folders {
-            let mut d = dir.clone();
-            d.push(folder);
-
-            fs::create_dir_all(d.as_path()).unwrap();
-        }
-
-        (config, dir)
     }
 
     #[test]
@@ -166,9 +168,6 @@ mod benchs {
     use super::*;
     use rand::distributions::Alphanumeric;
     use rand::Rng;
-    use std::env;
-    use std::fs::{File, OpenOptions};
-    use std::io::prelude::*;
     use test::{black_box, Bencher};
 
     fn get_rand_string(len: usize) -> String {
@@ -178,31 +177,59 @@ mod benchs {
             .collect::<String>()
     }
 
-    #[bench]
-    fn bench_scan_random_strings(b: &mut Bencher) {
+    fn generate_lines() -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
         (0..1000).for_each(|_x| {
-            lines.push(get_rand_string(1000));
+            let mut s: String = get_rand_string(700);
+            for i in 1..6 {
+                s.insert(100 * i, '/');
+            }
+            lines.push(s);
         });
-        let mut dir = env::temp_dir();
-        dir.push("bench_random_string");
-        let file_name: &str = dir.to_str().unwrap();
-        let mut file: File = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .read(true)
-            .open(file_name)
-            .unwrap();
+        lines
+    }
 
-        for line in lines {
-            file.write(line.as_bytes()).unwrap();
-            file.write(b"\n").unwrap();
-        }
+    #[bench]
+    fn bench_scan_random_strings_single_thread(b: &mut Bencher) {
+        let lines = generate_lines();
+        let (mut config, _dir) = create_test_folders(lines);
+        config.num_threads = 1;
 
         b.iter(|| {
-            let file: File = File::open(file_name).unwrap();
-            let reader: BufReader<File> = BufReader::new(file);
-            black_box(matcher(default_config(), get_rand_string(20)));
+            black_box(matcher(config.clone(), get_rand_string(20)));
+        });
+    }
+
+    #[bench]
+    fn bench_scan_random_strings_two_threads(b: &mut Bencher) {
+        let lines = generate_lines();
+        let (mut config, _dir) = create_test_folders(lines);
+        config.num_threads = 2;
+
+        b.iter(|| {
+            black_box(matcher(config.clone(), get_rand_string(20)));
+        });
+    }
+
+    #[bench]
+    fn bench_scan_random_strings_five_threads(b: &mut Bencher) {
+        let lines = generate_lines();
+        let (mut config, _dir) = create_test_folders(lines);
+        config.num_threads = 5;
+
+        b.iter(|| {
+            black_box(matcher(config.clone(), get_rand_string(20)));
+        });
+    }
+
+    #[bench]
+    fn bench_scan_random_strings_ten_threads(b: &mut Bencher) {
+        let lines = generate_lines();
+        let (mut config, _dir) = create_test_folders(lines);
+        config.num_threads = 10;
+
+        b.iter(|| {
+            black_box(matcher(config.clone(), get_rand_string(20)));
         });
     }
 }
