@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use yaml_rust::{yaml, YamlLoader};
 
 #[derive(Clone)]
@@ -67,6 +67,13 @@ fn read_config_from_file(mut file: File) -> Config {
     }
 }
 
+pub fn get_config_pb(maybe_config_file: Option<PathBuf>) -> Config {
+    match maybe_config_file {
+        Some(f) => get_config(Some(f.as_path())),
+        None => get_config(None),
+    }
+}
+
 pub fn get_config(maybe_config_file: Option<&Path>) -> Config {
     let default_path = get_default_config_file();
     let config_file = match maybe_config_file {
@@ -76,7 +83,14 @@ pub fn get_config(maybe_config_file: Option<&Path>) -> Config {
 
     match File::open(config_file) {
         Ok(f) => read_config_from_file(f),
-        Err(_) => default_config(),
+        Err(e) => {
+            println!(
+                "Error: Failed to read config {}: {}",
+                config_file.to_str().unwrap(),
+                e
+            );
+            default_config()
+        }
     }
 }
 
@@ -88,6 +102,13 @@ mod tests {
     fn test_no_config_file_existing() {
         let config = get_config(Some(Path::new("nonexisting")));
         assert_eq!(config.ignores, HashSet::new());
+    }
+
+    #[test]
+    fn missing_default_file() {
+        let config_file = PathBuf::from("/tmp/nonexistingthing");
+        let config = get_config_pb(Some(config_file));
+        assert_eq!(config.num_threads, 1);
     }
 
     #[test]

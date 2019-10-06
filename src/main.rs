@@ -5,18 +5,23 @@ extern crate test;
 
 mod config;
 mod fj_matcher;
-use config::{get_config, Config};
+use config::{get_config_pb, Config};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
 struct Cli {
     pattern: String,
+
+    #[structopt(long = "--config", parse(from_os_str))]
+    config_file: Option<PathBuf>,
 }
 
 fn main() {
     let args: Cli = Cli::from_args();
-    let config: Config = get_config(None);
+    let config_file = args.config_file;
+    let config = get_config_pb(config_file);
 
     change(config, args.pattern);
 }
