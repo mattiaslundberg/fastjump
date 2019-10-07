@@ -3,3 +3,4 @@ ignores:
 
 scan_root: test_configs
 num_threads: 5
+previous_visits: test_configs/previous.yml

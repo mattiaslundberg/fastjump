@@ -11,6 +11,7 @@ pub struct Config {
     pub ignores: HashSet<String>,
     pub scan_root: String,
     pub num_threads: u8,
+    pub previous_visits: Option<PathBuf>,
 }
 
 fn get_default_config_file() -> String {
@@ -24,6 +25,7 @@ pub fn default_config() -> Config {
         ignores: HashSet::new(),
         scan_root,
         num_threads: 1,
+        previous_visits: None,
     }
 }
 
@@ -34,6 +36,7 @@ pub fn test_config() -> Config {
         ignores,
         scan_root: String::from("test_configs"),
         num_threads: 1,
+        previous_visits: None,
     }
 }
 
@@ -54,6 +57,11 @@ fn read_config_from_file(mut file: File) -> Config {
     let default_root = ".";
     let scan_root = data["scan_root"].as_str().unwrap_or(&default_root);
 
+    let previous_visits: Option<PathBuf> = match data["previous_visits"].as_str() {
+        Some(s) => Some(PathBuf::from(s)),
+        None => None,
+    };
+
     let num_threads: u8 = data["num_threads"]
         .as_i64()
         .unwrap_or(3)
@@ -64,6 +72,7 @@ fn read_config_from_file(mut file: File) -> Config {
         ignores,
         scan_root: String::from(scan_root),
         num_threads,
+        previous_visits,
     }
 }
 
@@ -109,6 +118,7 @@ mod tests {
         let config_file = PathBuf::from("/tmp/nonexistingthing");
         let config = get_config_pb(Some(config_file));
         assert_eq!(config.num_threads, 1);
+        assert_eq!(config.previous_visits, None);
     }
 
     #[test]
@@ -119,6 +129,10 @@ mod tests {
         assert_eq!(config.ignores, expected);
         assert_eq!(config.scan_root, String::from("test_configs"));
         assert_eq!(config.num_threads, 5);
+        assert_eq!(
+            config.previous_visits,
+            Some(PathBuf::from("test_configs/previous.yml"))
+        );
     }
 
     #[test]
