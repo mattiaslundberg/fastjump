@@ -5,7 +5,9 @@ extern crate test;
 
 mod config;
 mod fj_matcher;
+mod save;
 use config::{get_config_pb, Config};
+use save::save;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -16,6 +18,9 @@ struct Cli {
 
     #[structopt(long = "--config", parse(from_os_str))]
     config_file: Option<PathBuf>,
+
+    #[structopt(short, long = "--save-visit")]
+    save_visit: bool,
 }
 
 fn main() {
@@ -23,6 +28,10 @@ fn main() {
     let config_file = args.config_file;
     let config = get_config_pb(config_file);
 
+    if args.save_visit {
+        save(config, args.pattern);
+        return;
+    }
     change(config, args.pattern);
 }
 
