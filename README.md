@@ -71,8 +71,3 @@ chpwd() {
     fastjump --save-visit $PWD
 }
 ```
-
-## Future work
- 
- - [x] Remove need for scanning, let matcher scan when running and have configuration for base directory
- - [ ] Learn based on user navigation preferences, hook in on cd and save all working dirs commonly used, prefer these when matching. Should be optional (keep install as simple as possible)
