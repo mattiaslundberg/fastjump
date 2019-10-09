@@ -3,11 +3,11 @@
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
+mod cache;
 mod config;
 mod fj_matcher;
-mod save;
+use cache::save;
 use config::{get_config_pb, Config};
-use save::save;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

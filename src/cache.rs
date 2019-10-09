@@ -1,4 +1,5 @@
 use crate::config::Config;
+use linked_hash_map::LinkedHashMap;
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -31,6 +32,32 @@ pub fn write_new_state(previous_visits: PathBuf, location: String, data_hash: &m
         .open(previous_visits)
         .unwrap();
     f.write_all(writer.as_bytes()).unwrap();
+}
+
+pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
+    let mut res: LinkedHashMap<String, i64> = LinkedHashMap::new();
+    if config.previous_visits.is_none() {
+        return res;
+    }
+    let previous_visits = config.previous_visits.unwrap();
+    let mut yaml_string = String::new();
+    read_current_state(previous_visits.clone(), &mut yaml_string);
+
+    let datas = yaml::YamlLoader::load_from_str(&yaml_string).unwrap();
+    let default = Yaml::Hash(yaml::Hash::new());
+    let data = if datas.is_empty() {
+        &default
+    } else {
+        &datas[0]
+    };
+
+    for (key, value) in data.clone().into_hash().unwrap() {
+        let k = key.into_string().unwrap();
+        let v = value.into_i64().unwrap();
+        res.insert(k, v);
+    }
+
+    res
 }
 
 pub fn save(config: Config, location: String) {
@@ -81,7 +108,31 @@ mod tests {
     }
 
     #[test]
-    fn test_handles_file_is_none() {
+    fn test_get_handles_file_is_none() {
+        let mut config: Config = test_config();
+        config.previous_visits = None;
+        let res = get_current_state(config);
+        let expected: LinkedHashMap<String, i64> = LinkedHashMap::new();
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn test_returns_from_file() {
+        let (config, _) = setup("test_returns_from_file.yml");
+
+        write_yaml(
+            config.clone().previous_visits.unwrap(),
+            b"---\nsomething: 3",
+        );
+
+        let res = get_current_state(config);
+        let mut expected: LinkedHashMap<String, i64> = LinkedHashMap::new();
+        expected.insert(String::from("something"), 3);
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn test_save_handles_file_is_none() {
         let mut config: Config = test_config();
         config.previous_visits = None;
         let location: String = String::from("something");
@@ -89,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn test_creates_file() {
+    fn test_save_creates_file() {
         let (config, dir) = setup("test_creates_file.yml");
         let location: String = String::from("something");
         save(config, location);
@@ -101,7 +152,7 @@ mod tests {
     }
 
     #[test]
-    fn test_appends_to_file() {
+    fn test_save_appends_to_file() {
         let (config, dir) = setup("test_appends_to_file.yml");
 
         write_yaml(
@@ -119,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    fn test_updates_line_in_file() {
+    fn test_save_updates_line_in_file() {
         let (config, dir) = setup("test_updates_line_in_file.yml");
 
         write_yaml(

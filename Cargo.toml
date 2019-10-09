@@ -12,6 +12,7 @@ structopt = "0.3"
 fuzzy-matcher = "*"
 rand = "0.7"
 yaml-rust = "0.4"
+linked-hash-map = "*"
 
 [features]
 nightly = []
