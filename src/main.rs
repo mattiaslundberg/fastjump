@@ -36,8 +36,9 @@ fn main() {
 }
 
 fn change(config: Config, pattern: String) -> String {
-    let best_result: String = fj_matcher::matcher(config, pattern);
+    let best_result: String = fj_matcher::matcher(config.clone(), pattern);
 
+    save(config, best_result.clone());
     println!("{}", best_result);
     best_result
 }
