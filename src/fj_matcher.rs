@@ -1,7 +1,9 @@
+use crate::cache::get_current_state;
 #[cfg(test)]
 use crate::config::test_config;
 use crate::config::Config;
 use fuzzy_matcher::skim::fuzzy_match;
+use linked_hash_map::LinkedHashMap;
 #[cfg(test)]
 use rand::distributions::Alphanumeric;
 #[cfg(test)]
@@ -19,6 +21,7 @@ pub fn matcher(config: Config, pattern: String) -> String {
     let pattern = Arc::new(pattern.chars().rev().collect::<String>());
     let mut directories: VecDeque<String> = VecDeque::new();
     directories.push_back(String::from(config.scan_root.as_str()));
+    let cache: LinkedHashMap<String, i64> = get_current_state(config.clone());
 
     let arc_directories = Arc::new(Mutex::new(directories));
     let mut handles = vec![];
@@ -28,6 +31,7 @@ pub fn matcher(config: Config, pattern: String) -> String {
         let arc_dirs = Arc::clone(&arc_directories);
         let pattern = Arc::clone(&pattern);
         let config = config.clone();
+        let cache = cache.clone();
         let (tx, rs) = channel();
         receivers.push(rs);
 
@@ -73,10 +77,14 @@ pub fn matcher(config: Config, pattern: String) -> String {
 
                     let rev_line = path_str.chars().rev().collect::<String>();
 
-                    let score = match fuzzy_match(&rev_line, &pattern) {
+                    let mut score = match fuzzy_match(&rev_line, &pattern) {
                         Some(s) => s,
                         None => 0,
                     };
+
+                    if cache.contains_key(&path_string) {
+                        score += cache[&path_string];
+                    }
 
                     if score > best_s {
                         best_s = score;
@@ -151,6 +159,7 @@ fn create_test_folders(folders: Vec<String>) -> (Config, PathBuf) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache::write_yaml;
 
     macro_rules! vec_string {
         ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -171,6 +180,25 @@ mod tests {
         let (config, mut dir) = create_test_folders(lines);
         let result: String = matcher(config, String::from("project"));
         dir.push("projects/project");
+        assert_eq!(result, String::from(dir.as_path().to_str().unwrap()));
+    }
+
+    #[test]
+    fn test_prefer_entries_from_cache() {
+        let lines: Vec<String> =
+            vec_string!["projects/a", "projects/b", "projects/c", "projects/d"];
+        let (mut config, mut dir) = create_test_folders(lines);
+        let mut previous_visits = dir.clone();
+        previous_visits.push("visits.yml");
+        config.previous_visits = Some(previous_visits.clone());
+
+        write_yaml(
+            previous_visits,
+            format!("---\n{}/projects/c: 5", dir.as_path().to_str().unwrap()).as_bytes(),
+        );
+
+        let result: String = matcher(config, String::from("proj"));
+        dir.push("projects/c");
         assert_eq!(result, String::from(dir.as_path().to_str().unwrap()));
     }
 

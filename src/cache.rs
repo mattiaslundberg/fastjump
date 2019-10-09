@@ -80,6 +80,16 @@ pub fn save(config: Config, location: String) {
 }
 
 #[cfg(test)]
+pub fn write_yaml(path: PathBuf, contents: &[u8]) {
+    let mut f = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(path)
+        .unwrap();
+    f.write_all(contents).unwrap();
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::config::test_config;
@@ -96,15 +106,6 @@ mod tests {
         };
         config.previous_visits = Some(dir.clone());
         (config, dir)
-    }
-
-    fn write_yaml(path: PathBuf, contents: &[u8]) {
-        let mut f = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(path)
-            .unwrap();
-        f.write_all(contents).unwrap();
     }
 
     #[test]
