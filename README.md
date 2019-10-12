@@ -1,9 +1,11 @@
 # Fastjump
 
+Simply navigate between directories.
+
 ## Goals
 
- 1. Fast way to switch directories using shell aliases
- 2. Keep it simple, minimal featureset
+ 1. Provide a simple and fast way to switch between directories no matter where you are in relation to that directory
+ 2. Keep the features minimal, both regarding config and features
  
 ## Installation
 
