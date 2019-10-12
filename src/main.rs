@@ -12,14 +12,29 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[structopt(name = "fastjump")]
+/// Simple way to navigate between directories
+///
+/// See https://github.com/mattiaslundberg/fastjump#configure for information on how to configure fastjump before first use.
 struct Cli {
+    /// If passing `--save-visit` the location to save, otherwise will be used to change directories
+    ///
+    /// See help for `--save-visit` for more information how pattern is used in that case.
+    /// Otherwise fastjump will attempt to match all existing directories from `scan_root` (if specified in config) or `HOME` if not configured. All directories will be fuzzy matched against the pattern and the best option will be printed in a way that it can be directly used by `cd`, `cd $(fastjump <some pattern>)`. If no good match is found it will print `.` and `cd` will change to the current directory.
     pattern: String,
 
     #[structopt(long = "--config", parse(from_os_str))]
+    /// Use a non standard configuration file, default: `~/.fastjump.yml`
+    ///
+    /// The file must exist or default config with no ignores and scan_root `~` will be used.
+    /// See https://github.com/mattiaslundberg/fastjump for avaliable configuration options.
     config_file: Option<PathBuf>,
 
     #[structopt(short, long = "--save-visit")]
+    /// Requires config. Save location in pattern to cache file
+    ///
+    /// Saves the location in pattern to configured cache file. See help for `--config` for how to configure.
+    /// Will update the cache file and give the saved location a better match when matching.
     save_visit: bool,
 }
 
