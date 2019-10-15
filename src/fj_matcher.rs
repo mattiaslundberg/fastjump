@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub fn matcher(config: Config, pattern: String) -> String {
-    let pattern: Arc<String> = Arc::new(pattern.chars().rev().collect::<String>());
+    let pattern: String = pattern.chars().rev().collect::<String>();
     let cache: LinkedHashMap<String, i64> = get_current_state(config.clone());
 
     // Setup queue of directories to scan
@@ -34,7 +34,7 @@ pub fn matcher(config: Config, pattern: String) -> String {
     for _ in 0..config.num_threads {
         // Clone for each thread
         let arc_dirs = Arc::clone(&arc_directories);
-        let pattern = Arc::clone(&pattern);
+        let pattern = pattern.clone();
         let config = config.clone();
         let cache = cache.clone();
 
