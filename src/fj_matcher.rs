@@ -18,20 +18,27 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 pub fn matcher(config: Config, pattern: String) -> String {
-    let pattern = Arc::new(pattern.chars().rev().collect::<String>());
-    let mut directories: VecDeque<String> = VecDeque::new();
-    directories.push_back(String::from(config.scan_root.as_str()));
+    let pattern: Arc<String> = Arc::new(pattern.chars().rev().collect::<String>());
     let cache: LinkedHashMap<String, i64> = get_current_state(config.clone());
 
+    // Setup queue of directories to scan
+    let mut directories: VecDeque<String> = VecDeque::new();
+    directories.push_back(String::from(config.scan_root.as_str()));
     let arc_directories = Arc::new(Mutex::new(directories));
+
+    // List of join handles
     let mut handles = vec![];
+    // List of receivers for messages/results from threads
     let mut receivers = vec![];
 
     for _ in 0..config.num_threads {
+        // Clone for each thread
         let arc_dirs = Arc::clone(&arc_directories);
         let pattern = Arc::clone(&pattern);
         let config = config.clone();
         let cache = cache.clone();
+
+        // Setup communication back to main thread
         let (tx, rs) = channel();
         receivers.push(rs);
 
