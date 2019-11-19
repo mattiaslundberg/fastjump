@@ -5,7 +5,7 @@ cargo test
 CURRENT_VERSION="v$(cargo run -- --version 2> /dev/null | cut -d' ' -f2-)"
 
 git commit -am "${CURRENT_VERSION}"
-git tag -a "${CURRENT_VERSION}"
+git tag "${CURRENT_VERSION}"
 git push --tags
 
 URL="https://github.com/mattiaslundberg/fastjump/archive/${CURRENT_VERSION}.tar.gz"
