@@ -73,3 +73,11 @@ chpwd() {
     fastjump --save-visit $PWD
 }
 ```
+
+## Development
+
+### Publish new release
+ 
+ 1. Bump version number in `Cargo.toml`
+ 2. Run `./updaterelease.sh`
+ 3. Update release notes on github
