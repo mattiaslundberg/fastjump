@@ -1,11 +1,18 @@
 use crate::config::Config;
 use linked_hash_map::LinkedHashMap;
-use std::fs::OpenOptions;
+use std::fs::{create_dir_all, OpenOptions};
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
 pub fn read_current_state(previous_visits: PathBuf, yaml_string: &mut String) {
+    let mut previous_visits_dir = previous_visits.clone();
+    previous_visits_dir.pop();
+    match create_dir_all(previous_visits_dir.as_path()) {
+        Ok(_) => (),
+        Err(_) => (),
+    }
+
     let mut file = OpenOptions::new()
         .create(true)
         .read(true)
@@ -148,6 +155,31 @@ mod tests {
 
         let mut s = String::new();
         read_current_state(dir, &mut s);
+
+        assert_eq!(s, String::from("---\nsomething: 1"));
+    }
+
+    #[test]
+    fn test_save_creates_folder() {
+        let mut config: Config = test_config();
+        let mut dir = env::temp_dir();
+        dir.push("created_folder");
+        let mut file = dir.clone();
+        file.push("test_creates_folder.yml");
+        match fs::remove_file(file.clone()) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+        match fs::remove_dir(dir.clone()) {
+            Ok(_) => (),
+            Err(_) => (),
+        };
+        config.previous_visits = Some(file.clone());
+        let location: String = String::from("something");
+        save(config, location);
+
+        let mut s = String::new();
+        read_current_state(file.clone(), &mut s);
 
         assert_eq!(s, String::from("---\nsomething: 1"));
     }
