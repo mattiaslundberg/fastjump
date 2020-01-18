@@ -8,16 +8,13 @@ use yaml_rust::{yaml, Yaml, YamlEmitter};
 pub fn read_current_state(previous_visits: PathBuf, yaml_string: &mut String) {
     let mut previous_visits_dir = previous_visits.clone();
     previous_visits_dir.pop();
-    match create_dir_all(previous_visits_dir.as_path()) {
-        Ok(_) => (),
-        Err(_) => (),
-    }
+    let _ = create_dir_all(previous_visits_dir.as_path());
 
     let mut file = OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(previous_visits.clone())
+        .open(previous_visits)
         .unwrap();
     file.read_to_string(yaml_string).unwrap();
 }
@@ -48,7 +45,7 @@ pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
     }
     let previous_visits = config.previous_visits.unwrap();
     let mut yaml_string = String::new();
-    read_current_state(previous_visits.clone(), &mut yaml_string);
+    read_current_state(previous_visits, &mut yaml_string);
 
     let datas = yaml::YamlLoader::load_from_str(&yaml_string).unwrap();
     let default = Yaml::Hash(yaml::Hash::new());
