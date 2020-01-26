@@ -44,35 +44,40 @@ fn read_config_from_file(mut file: File) -> Config {
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
     let datas = YamlLoader::load_from_str(contents.as_str()).unwrap();
-    let data = &datas[0];
 
-    let mut ignores = HashSet::new();
-    let default_ignores = yaml::Array::new();
-    let ignore_data = data["ignores"].as_vec().unwrap_or(&default_ignores);
+    if datas.len() > 0 {
+        let data = &datas[0];
 
-    for d in ignore_data {
-        ignores.insert(String::from(d.as_str().unwrap()));
-    }
+        let mut ignores = HashSet::new();
+        let default_ignores = yaml::Array::new();
+        let ignore_data = data["ignores"].as_vec().unwrap_or(&default_ignores);
 
-    let default_root = ".";
-    let scan_root = data["scan_root"].as_str().unwrap_or(&default_root);
+        for d in ignore_data {
+            ignores.insert(String::from(d.as_str().unwrap()));
+        }
 
-    let previous_visits: Option<PathBuf> = match data["previous_visits"].as_str() {
-        Some(s) => Some(PathBuf::from(s)),
-        None => None,
-    };
+        let default_root = ".";
+        let scan_root = data["scan_root"].as_str().unwrap_or(&default_root);
 
-    let num_threads: u8 = data["num_threads"]
-        .as_i64()
-        .unwrap_or(3)
-        .try_into()
-        .unwrap();
+        let previous_visits: Option<PathBuf> = match data["previous_visits"].as_str() {
+            Some(s) => Some(PathBuf::from(s)),
+            None => None,
+        };
 
-    Config {
-        ignores,
-        scan_root: String::from(scan_root),
-        num_threads,
-        previous_visits,
+        let num_threads: u8 = data["num_threads"]
+            .as_i64()
+            .unwrap_or(3)
+            .try_into()
+            .unwrap();
+
+        Config {
+            ignores,
+            scan_root: String::from(scan_root),
+            num_threads,
+            previous_visits,
+        }
+    } else {
+        default_config()
     }
 }
 
@@ -106,6 +111,8 @@ pub fn get_config(maybe_config_file: Option<&Path>) -> Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache::write_yaml;
+    use std::env;
 
     #[test]
     fn test_no_config_file_existing() {
@@ -117,6 +124,17 @@ mod tests {
     fn missing_default_file() {
         let config_file = PathBuf::from("/tmp/nonexistingthing");
         let config = get_config_pb(Some(config_file));
+        assert_eq!(config.num_threads, 1);
+        assert_eq!(config.previous_visits, None);
+    }
+
+    #[test]
+    fn empty_config_file() {
+        let mut dir = env::temp_dir();
+        dir.push("file.yml");
+
+        write_yaml(dir.clone(), b"");
+        let config = get_config_pb(Some(dir));
         assert_eq!(config.num_threads, 1);
         assert_eq!(config.previous_visits, None);
     }
