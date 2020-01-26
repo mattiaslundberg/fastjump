@@ -122,6 +122,19 @@ mod tests {
     }
 
     #[test]
+    fn test_get_handles_file_is_empty() {
+        let mut config: Config = test_config();
+        let mut dir = env::temp_dir();
+        dir.push("some_file.yaml");
+        write_yaml(dir.clone(), b"");
+
+        config.previous_visits = Some(dir);
+        let res = get_current_state(config);
+        let expected: LinkedHashMap<String, i64> = LinkedHashMap::new();
+        assert_eq!(res, expected);
+    }
+
+    #[test]
     fn test_returns_from_file() {
         let (config, _) = setup("test_returns_from_file.yml");
 
