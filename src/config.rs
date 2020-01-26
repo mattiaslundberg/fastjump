@@ -129,6 +129,12 @@ mod tests {
     }
 
     #[test]
+    fn get_none_config() {
+        let config = get_config_pb(None);
+        assert_eq!(config.num_threads, 1);
+    }
+
+    #[test]
     fn empty_config_file() {
         let mut dir = env::temp_dir();
         dir.push("file.yml");
