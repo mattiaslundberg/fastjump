@@ -38,6 +38,7 @@ struct Cli {
     save_visit: bool,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let args: Cli = Cli::from_args();
     let config_file = args.config_file;
