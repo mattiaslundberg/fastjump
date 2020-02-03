@@ -65,10 +65,7 @@ fn match_worker(
 
             let rev_line = path_str.chars().rev().collect::<String>();
 
-            let mut score = match fuzzy_match(&rev_line, &pattern) {
-                Some(s) => s,
-                None => 0,
-            };
+            let mut score = fuzzy_match(&rev_line, &pattern).unwrap_or(0);
 
             if cache.contains_key(&path_string) {
                 score += cache[&path_string];
