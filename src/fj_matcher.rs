@@ -13,9 +13,77 @@ use std::collections::VecDeque;
 use std::env;
 use std::fs::{self, ReadDir};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
+
+fn match_worker(
+    config: Config,
+    pattern: String,
+    cache: LinkedHashMap<String, i64>,
+    arc_dirs: Arc<Mutex<VecDeque<String>>>,
+    tx: Sender<(i64, String)>,
+) {
+    let mut best_s = 0;
+    let mut best_res = String::from("");
+    loop {
+        let mut dirs = arc_dirs.lock().unwrap();
+        let dir: ReadDir = match dirs.pop_front() {
+            Some(path_str) => {
+                drop(dirs);
+                let current_path: &Path = Path::new(path_str.as_str());
+                fs::read_dir(current_path).unwrap()
+            }
+            None => {
+                tx.send((best_s, best_res)).unwrap();
+                break;
+            }
+        };
+
+        for thing in dir {
+            let path: PathBuf = match thing {
+                Ok(de) => de.path(),
+                Err(_) => break,
+            };
+            if !path.is_dir() {
+                continue;
+            };
+
+            let path_str = path.to_str().unwrap();
+            let path_string: String = String::from(path_str);
+
+            if path_string.contains("/.") {
+                continue;
+            };
+
+            let mut parts: Vec<&str> = path_str.split('/').collect();
+            let folder: &str = parts.pop().unwrap();
+
+            if config.ignores.contains(folder) {
+                continue;
+            }
+
+            let rev_line = path_str.chars().rev().collect::<String>();
+
+            let mut score = match fuzzy_match(&rev_line, &pattern) {
+                Some(s) => s,
+                None => 0,
+            };
+
+            if cache.contains_key(&path_string) {
+                score += cache[&path_string];
+            }
+
+            if score > best_s {
+                best_s = score;
+                best_res = path_string;
+            }
+
+            let mut dirs = arc_dirs.lock().unwrap();
+            dirs.push_back(String::from(path_str));
+        }
+    }
+}
 
 pub fn matcher(config: Config, pattern: String) -> String {
     let pattern: String = pattern.chars().rev().collect::<String>();
@@ -42,67 +110,7 @@ pub fn matcher(config: Config, pattern: String) -> String {
         let (tx, rs) = channel();
         receivers.push(rs);
 
-        let handle = thread::spawn(move || {
-            let mut best_s = 0;
-            let mut best_res = String::from("");
-            loop {
-                let mut dirs = arc_dirs.lock().unwrap();
-                let dir: ReadDir = match dirs.pop_front() {
-                    Some(path_str) => {
-                        drop(dirs);
-                        let current_path: &Path = Path::new(path_str.as_str());
-                        fs::read_dir(current_path).unwrap()
-                    }
-                    None => {
-                        tx.send((best_s, best_res)).unwrap();
-                        break;
-                    }
-                };
-
-                for thing in dir {
-                    let path: PathBuf = match thing {
-                        Ok(de) => de.path(),
-                        Err(_) => break,
-                    };
-                    if !path.is_dir() {
-                        continue;
-                    };
-
-                    let path_str = path.to_str().unwrap();
-                    let path_string: String = String::from(path_str);
-
-                    if path_string.contains("/.") {
-                        continue;
-                    };
-
-                    let mut parts: Vec<&str> = path_str.split('/').collect();
-                    let folder: &str = parts.pop().unwrap();
-
-                    if config.ignores.contains(folder) {
-                        continue;
-                    }
-
-                    let rev_line = path_str.chars().rev().collect::<String>();
-
-                    let mut score = match fuzzy_match(&rev_line, &pattern) {
-                        Some(s) => s,
-                        None => 0,
-                    };
-
-                    if cache.contains_key(&path_string) {
-                        score += cache[&path_string];
-                    }
-
-                    if score > best_s {
-                        best_s = score;
-                        best_res = path_string;
-                    }
-
-                    let mut dirs = arc_dirs.lock().unwrap();
-                    dirs.push_back(String::from(path_str));
-                }
-            }
-        });
+        let handle = thread::spawn(move || match_worker(config, pattern, cache, arc_dirs, tx));
         handles.push(handle);
     }
 
