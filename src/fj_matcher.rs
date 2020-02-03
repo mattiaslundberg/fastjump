@@ -148,13 +148,7 @@ fn create_test_folders(folders: Vec<String>) -> (Config, PathBuf) {
     tmp_dir.push_str("_fj_matcher_tests");
     dir.push(tmp_dir);
 
-    match fs::remove_dir_all(dir.clone()) {
-        Ok(()) => (),
-        Err(e) => {
-            println!("Failed to remove directory {}", e);
-            ()
-        }
-    };
+    fs::remove_dir_all(dir.clone()).unwrap_or(());
 
     config.scan_root = String::from(dir.as_path().to_str().unwrap());
 

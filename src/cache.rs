@@ -104,10 +104,7 @@ mod tests {
         let mut config: Config = test_config();
         let mut dir = env::temp_dir();
         dir.push(filename);
-        match fs::remove_file(dir.clone()) {
-            Ok(_) => (),
-            Err(_) => (),
-        };
+        fs::remove_file(dir.clone()).unwrap_or(());
         config.previous_visits = Some(dir.clone());
         (config, dir)
     }
@@ -176,14 +173,8 @@ mod tests {
         dir.push("created_folder");
         let mut file = dir.clone();
         file.push("test_creates_folder.yml");
-        match fs::remove_file(file.clone()) {
-            Ok(_) => (),
-            Err(_) => (),
-        };
-        match fs::remove_dir(dir.clone()) {
-            Ok(_) => (),
-            Err(_) => (),
-        };
+        fs::remove_file(file.clone()).unwrap_or(());
+        fs::remove_dir(dir.clone()).unwrap_or(());
         config.previous_visits = Some(file.clone());
         let location: String = String::from("something");
         save(config, location);

@@ -90,10 +90,7 @@ pub fn get_config_pb(maybe_config_file: Option<PathBuf>) -> Config {
 
 pub fn get_config(maybe_config_file: Option<&Path>) -> Config {
     let default_path = get_default_config_file();
-    let config_file = match maybe_config_file {
-        Some(f) => f,
-        None => Path::new(&default_path),
-    };
+    let config_file = maybe_config_file.unwrap_or(Path::new(&default_path));
 
     match File::open(config_file) {
         Ok(f) => read_config_from_file(f),
