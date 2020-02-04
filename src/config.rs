@@ -45,7 +45,7 @@ fn read_config_from_file(mut file: File) -> Config {
     file.read_to_string(&mut contents).unwrap();
     let datas = YamlLoader::load_from_str(contents.as_str()).unwrap();
 
-    if datas.len() > 0 {
+    if !datas.is_empty() {
         let data = &datas[0];
 
         let mut ignores = HashSet::new();
@@ -90,7 +90,7 @@ pub fn get_config_pb(maybe_config_file: Option<PathBuf>) -> Config {
 
 pub fn get_config(maybe_config_file: Option<&Path>) -> Config {
     let default_path = get_default_config_file();
-    let config_file = maybe_config_file.unwrap_or(Path::new(&default_path));
+    let config_file = maybe_config_file.unwrap_or_else(|| Path::new(&default_path));
 
     match File::open(config_file) {
         Ok(f) => read_config_from_file(f),
