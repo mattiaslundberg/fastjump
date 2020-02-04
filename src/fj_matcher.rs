@@ -78,6 +78,7 @@ fn match_worker(
 
             let mut dirs = arc_dirs.lock().unwrap();
             dirs.push_back(String::from(path_str));
+            drop(dirs);
         }
     }
 }
