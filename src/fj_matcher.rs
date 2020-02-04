@@ -228,10 +228,10 @@ mod benchs {
 
     fn generate_lines() -> Vec<String> {
         let mut lines: Vec<String> = Vec::new();
-        (0..1000).for_each(|_x| {
-            let mut s: String = get_rand_string(700);
+        (0..100).for_each(|_x| {
+            let mut s: String = get_rand_string(70);
             for i in 1..6 {
-                s.insert(100 * i, '/');
+                s.insert(10 * i, '/');
             }
             lines.push(s);
         });
@@ -265,17 +265,6 @@ mod benchs {
         let lines = generate_lines();
         let (mut config, _dir) = create_test_folders(lines);
         config.num_threads = 5;
-
-        b.iter(|| {
-            black_box(matcher(config.clone(), get_rand_string(20)));
-        });
-    }
-
-    #[bench]
-    fn bench_scan_random_strings_ten_threads(b: &mut Bencher) {
-        let lines = generate_lines();
-        let (mut config, _dir) = create_test_folders(lines);
-        config.num_threads = 10;
 
         b.iter(|| {
             black_box(matcher(config.clone(), get_rand_string(20)));
