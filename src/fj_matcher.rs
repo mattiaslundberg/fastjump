@@ -11,7 +11,7 @@ use rand::Rng;
 use std::collections::VecDeque;
 #[cfg(test)]
 use std::env;
-use std::fs::{self, ReadDir};
+use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex};
@@ -28,13 +28,21 @@ fn match_worker(
     let mut best_res = String::from("");
     loop {
         let mut dirs = arc_dirs.lock().unwrap();
-        let dir: ReadDir = match dirs.pop_front() {
+        let maybe_dir = match dirs.pop_front() {
             Some(path_str) => {
                 drop(dirs);
                 let current_path: &Path = Path::new(path_str.as_str());
-                fs::read_dir(current_path).unwrap()
+                fs::read_dir(current_path)
             }
             None => {
+                tx.send((best_s, best_res)).unwrap();
+                break;
+            }
+        };
+
+        let dir = match maybe_dir {
+            Ok(dir) => dir,
+            Err(_) => {
                 tx.send((best_s, best_res)).unwrap();
                 break;
             }
@@ -218,6 +226,24 @@ mod tests {
 
         let result: String = matcher(config, String::from("other"));
         assert!(result.as_str().ends_with("/projects/project\\ other"));
+    }
+
+    #[test]
+    fn test_directory_does_not_exist() {
+        let lines: Vec<String> = vec_string![];
+        let (config, _dir) = create_test_folders(lines);
+        let cache: LinkedHashMap<String, i64> = get_current_state(config.clone());
+        let mut directories: VecDeque<String> = VecDeque::new();
+        directories.push_back(String::from("asdf"));
+        let arc_directories = Arc::new(Mutex::new(directories));
+
+        let (tx, rs) = channel();
+        match_worker(config, String::from("projects"), cache, arc_directories, tx);
+
+        let (best_s, best_res) = rs.recv().unwrap();
+
+        assert_eq!(best_s, 0);
+        assert_eq!(best_res, String::from(""));
     }
 }
 
