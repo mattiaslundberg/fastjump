@@ -10,13 +10,22 @@ pub fn read_current_state(previous_visits: PathBuf, yaml_string: &mut String) {
     previous_visits_dir.pop();
     let _ = create_dir_all(previous_visits_dir.as_path());
 
-    let mut file = OpenOptions::new()
+    let maybe_file = OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
-        .open(previous_visits)
-        .unwrap();
-    file.read_to_string(yaml_string).unwrap();
+        .open(previous_visits.clone());
+    match maybe_file {
+        Ok(mut file) => file.read_to_string(yaml_string).unwrap(),
+        Err(e) => {
+            println!(
+                "Error: Failed to read state {}: {}",
+                previous_visits.to_str().unwrap(),
+                e
+            );
+            0
+        }
+    };
 }
 
 pub fn write_new_state(previous_visits: PathBuf, location: String, data_hash: &mut yaml::Hash) {
@@ -31,11 +40,17 @@ pub fn write_new_state(previous_visits: PathBuf, location: String, data_hash: &m
     let mut writer = String::new();
     let mut emitter = YamlEmitter::new(&mut writer);
     emitter.dump(&Yaml::Hash(data_hash.clone())).unwrap();
-    let mut f = OpenOptions::new()
-        .write(true)
-        .open(previous_visits)
-        .unwrap();
-    f.write_all(writer.as_bytes()).unwrap();
+    let f = OpenOptions::new().write(true).open(previous_visits.clone());
+    match f {
+        Ok(mut f) => f.write_all(writer.as_bytes()).unwrap(),
+        Err(e) => {
+            println!(
+                "Error: Failed to write state {}: {}",
+                previous_visits.to_str().unwrap(),
+                e
+            );
+        }
+    }
 }
 
 pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
@@ -107,6 +122,29 @@ mod tests {
         fs::remove_file(dir.clone()).unwrap_or(());
         config.previous_visits = Some(dir.clone());
         (config, dir)
+    }
+
+    #[test]
+    fn test_get_handles_file_is_unwritable() {
+        let mut config: Config = test_config();
+        let mut path = PathBuf::new();
+        path.push("/unwritable/test.yml");
+        config.previous_visits = Some(path);
+
+        let res = get_current_state(config);
+        let expected: LinkedHashMap<String, i64> = LinkedHashMap::new();
+        assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn test_save_handles_file_is_unwritable() {
+        let mut config: Config = test_config();
+        let mut path = PathBuf::new();
+        path.push("/unwritable/test.yml");
+        config.previous_visits = Some(path);
+
+        let location: String = String::from("something");
+        save(config, location);
     }
 
     #[test]
