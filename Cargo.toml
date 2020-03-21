@@ -1,6 +1,6 @@
 [package]
 name = "fastjump"
-version = "0.6.3"
+version = "0.7.0"
 authors = ["Mattias Lundberg <me@mlundberg.se>"]
 edition = "2018"
 build = "src/build.rs"

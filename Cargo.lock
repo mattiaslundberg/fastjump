@@ -44,7 +44,7 @@ dependencies = [
 
 [[package]]
 name = "fastjump"
-version = "0.6.3"
+version = "0.7.0"
 dependencies = [
  "fuzzy-matcher 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "linked-hash-map 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
