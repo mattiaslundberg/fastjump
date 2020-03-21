@@ -64,8 +64,7 @@ fn match_worker(
                 continue;
             };
 
-            let mut parts: Vec<&str> = path_str.split('/').collect();
-            let folder: &str = parts.pop().unwrap();
+            let folder: &str = path_str.split('/').last().unwrap_or("");
 
             if config.ignores.contains(folder) {
                 continue;
