@@ -72,9 +72,7 @@ fn match_worker(
                 continue;
             }
 
-            let rev_line = path_str.chars().rev().collect::<String>();
-
-            let mut score = skim_matcher.fuzzy_match(&rev_line, &pattern).unwrap_or(0);
+            let mut score = skim_matcher.fuzzy_match(&path_str, &pattern).unwrap_or(0);
 
             if cache.contains_key(&path_string) {
                 score += cache[&path_string];
@@ -93,7 +91,6 @@ fn match_worker(
 }
 
 pub fn matcher(config: Config, pattern: String) -> String {
-    let pattern: String = pattern.chars().rev().collect::<String>();
     let cache: LinkedHashMap<String, i64> = get_current_state(config.clone());
 
     // Setup queue of directories to scan
@@ -194,7 +191,7 @@ mod tests {
     fn test_prefer_later_in_string() {
         let lines: Vec<String> = vec_string!["projects", "projects/project", "projects/hello"];
         let (config, mut dir) = create_test_folders(lines);
-        let result: String = matcher(config, String::from("project"));
+        let result: String = matcher(config, String::from("psp"));
         dir.push("projects/project");
         assert_eq!(result, String::from(dir.as_path().to_str().unwrap()));
     }
