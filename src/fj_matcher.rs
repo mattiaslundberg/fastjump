@@ -2,7 +2,8 @@ use crate::cache::get_current_state;
 #[cfg(test)]
 use crate::config::test_config;
 use crate::config::Config;
-use fuzzy_matcher::skim::fuzzy_match;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use linked_hash_map::LinkedHashMap;
 #[cfg(test)]
 use rand::distributions::Alphanumeric;
@@ -24,6 +25,7 @@ fn match_worker(
     arc_dirs: Arc<Mutex<VecDeque<String>>>,
     tx: Sender<(i64, String)>,
 ) {
+    let skim_matcher = SkimMatcherV2::default();
     let mut best_s = 0;
     let mut best_res = String::from("");
     loop {
@@ -72,7 +74,7 @@ fn match_worker(
 
             let rev_line = path_str.chars().rev().collect::<String>();
 
-            let mut score = fuzzy_match(&rev_line, &pattern).unwrap_or(0);
+            let mut score = skim_matcher.fuzzy_match(&rev_line, &pattern).unwrap_or(0);
 
             if cache.contains_key(&path_string) {
                 score += cache[&path_string];
