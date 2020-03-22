@@ -5,7 +5,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use yaml_rust::{yaml, Yaml, YamlEmitter};
 
-pub fn read_current_state(previous_visits: PathBuf, yaml_string: &mut String) {
+fn read_current_state_file(previous_visits: PathBuf, yaml_string: &mut String) {
     let mut previous_visits_dir = previous_visits.clone();
     previous_visits_dir.pop();
     let _ = create_dir_all(previous_visits_dir.as_path());
@@ -28,7 +28,7 @@ pub fn read_current_state(previous_visits: PathBuf, yaml_string: &mut String) {
     };
 }
 
-pub fn write_new_state(previous_visits: PathBuf, location: String, data_hash: &mut yaml::Hash) {
+fn write_new_state_file(previous_visits: PathBuf, location: String, data_hash: &mut yaml::Hash) {
     let key = Yaml::String(location);
     let previous_value = data_hash
         .entry(key.clone())
@@ -60,7 +60,7 @@ fn read_current_state_to_yamlmap(config: Config) -> yaml::Hash {
     }
     let previous_visits = config.previous_visits.unwrap();
     let mut yaml_string = String::new();
-    read_current_state(previous_visits, &mut yaml_string);
+    read_current_state_file(previous_visits, &mut yaml_string);
 
     let datas = yaml::YamlLoader::load_from_str(&yaml_string).unwrap();
     let default = Yaml::Hash(yaml::Hash::new());
@@ -91,7 +91,7 @@ pub fn save(config: Config, location: String) {
         Some(p) => p,
     };
     let mut data_hash = read_current_state_to_yamlmap(config);
-    write_new_state(previous_visits, location, &mut data_hash);
+    write_new_state_file(previous_visits, location, &mut data_hash);
 }
 
 #[cfg(test)]
@@ -195,7 +195,7 @@ mod tests {
         save(config, location);
 
         let mut s = String::new();
-        read_current_state(dir, &mut s);
+        read_current_state_file(dir, &mut s);
 
         assert_eq!(s, String::from("---\nsomething: 1"));
     }
@@ -214,7 +214,7 @@ mod tests {
         save(config, location);
 
         let mut s = String::new();
-        read_current_state(file.clone(), &mut s);
+        read_current_state_file(file.clone(), &mut s);
 
         assert_eq!(s, String::from("---\nsomething: 1"));
     }
@@ -232,7 +232,7 @@ mod tests {
         save(config, location);
 
         let mut s = String::new();
-        read_current_state(dir, &mut s);
+        read_current_state_file(dir, &mut s);
 
         assert_eq!(s, String::from("---\nsomething: 1\nnew: 1"));
     }
@@ -250,7 +250,7 @@ mod tests {
         save(config, location);
 
         let mut s = String::new();
-        read_current_state(dir, &mut s);
+        read_current_state_file(dir, &mut s);
 
         assert_eq!(s, String::from("---\nsomething: 2"));
     }
