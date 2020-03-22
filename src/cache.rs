@@ -53,10 +53,10 @@ pub fn write_new_state(previous_visits: PathBuf, location: String, data_hash: &m
     }
 }
 
-pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
-    let mut res: LinkedHashMap<String, i64> = LinkedHashMap::new();
+fn read_current_state_to_yamlmap(config: Config) -> yaml::Hash {
+    let default = yaml::Hash::new();
     if config.previous_visits.is_none() {
-        return res;
+        return default;
     }
     let previous_visits = config.previous_visits.unwrap();
     let mut yaml_string = String::new();
@@ -69,8 +69,14 @@ pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
     } else {
         &datas[0]
     };
+    data.clone().into_hash().unwrap()
+}
 
-    for (key, value) in data.clone().into_hash().unwrap() {
+pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
+    let mut res: LinkedHashMap<String, i64> = LinkedHashMap::new();
+    let data = read_current_state_to_yamlmap(config);
+
+    for (key, value) in data {
         let k = key.into_string().unwrap();
         let v = value.into_i64().unwrap();
         res.insert(k, v);
@@ -80,21 +86,11 @@ pub fn get_current_state(config: Config) -> LinkedHashMap<String, i64> {
 }
 
 pub fn save(config: Config, location: String) {
-    if config.previous_visits.is_none() {
-        return;
-    }
-    let previous_visits = config.previous_visits.unwrap();
-    let mut yaml_string = String::new();
-    read_current_state(previous_visits.clone(), &mut yaml_string);
-
-    let datas = yaml::YamlLoader::load_from_str(&yaml_string).unwrap();
-    let default = Yaml::Hash(yaml::Hash::new());
-    let data = if datas.is_empty() {
-        &default
-    } else {
-        &datas[0]
+    let previous_visits = match config.clone().previous_visits {
+        None => return,
+        Some(p) => p,
     };
-    let mut data_hash = data.clone().into_hash().unwrap();
+    let mut data_hash = read_current_state_to_yamlmap(config);
     write_new_state(previous_visits, location, &mut data_hash);
 }
 
