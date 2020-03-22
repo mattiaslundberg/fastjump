@@ -36,18 +36,12 @@ fn match_worker(
                 let current_path: &Path = Path::new(path_str.as_str());
                 fs::read_dir(current_path)
             }
-            None => {
-                tx.send((best_s, best_res)).unwrap();
-                break;
-            }
+            None => break,
         };
 
         let dir = match maybe_dir {
             Ok(dir) => dir,
-            Err(_) => {
-                tx.send((best_s, best_res)).unwrap();
-                break;
-            }
+            Err(_) => break,
         };
 
         for thing in dir {
@@ -88,6 +82,7 @@ fn match_worker(
             drop(dirs);
         }
     }
+    tx.send((best_s, best_res)).unwrap();
 }
 
 pub fn matcher(config: Config, pattern: String) -> String {
